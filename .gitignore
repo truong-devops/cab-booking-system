@@ -5,7 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 
 #Do dự án đang phát triển và tiện trao đổi trong nhóm nên tạm thời vẫn push file .env lên Github
-#.env
+.env
 
 # OS
 .DS_Store
