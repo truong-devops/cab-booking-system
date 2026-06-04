@@ -1,560 +1,297 @@
 <div align="center">
 
-# 🚕 CAB Booking System
+# Cab Booking System
+
+**A microservices-based ride-hailing platform with event-driven workflows, polyglot persistence, and end-to-end observability.**
 
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs)](https://nodejs.org/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docs.docker.com/compose/)
-[![Kafka](https://img.shields.io/badge/Kafka-7.6-231F20?logo=apachekafka)](https://kafka.apache.org/)
+[![Go](https://img.shields.io/badge/Go-Gateway-00ADD8?logo=go)](https://go.dev/)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docs.docker.com/compose/)
+[![Apache Kafka](https://img.shields.io/badge/Apache_Kafka-7.6-231F20?logo=apachekafka)](https://kafka.apache.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)](https://redis.io/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?logo=mongodb)](https://www.mongodb.com/)
-
-**Microservices · Event-Driven · Real-time GPS · AI Matching · Zero Trust**
-
-A modern ride-hailing platform built for **high scalability**, **sub-second live tracking**, **event-driven workflows**, and **Zero Trust security** — powered by a polyglot persistence layer with full observability.
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)](https://redis.io/)
 
 </div>
 
----
+## Overview
 
-## ✨ Key Features
+Cab Booking System is a reference implementation of a ride-hailing platform organized as an npm-workspaces monorepo. It contains customer, driver, and operations applications; domain-oriented backend services; REST and event contracts; Docker Compose infrastructure; and a complete local observability stack.
 
-| Category | Feature | Description |
-|----------|---------|-------------|
-| 🚖 **Ride Experience** | Booking Lifecycle | End-to-end booking flow across 13 microservices |
-| | Real-time GPS | Driver ↔ passenger live tracking with < 1s latency via WebSocket |
-| 🧠 **Intelligence** | AI Driver Matching | Redis Geo + scoring engine with rule-based fallback |
-| | Smart ETA | Event-driven, cache-first ETA computation; routing provider agnostic |
-| | Surge Pricing | Near real-time demand/supply pricing, decoupled from booking flow |
-| 🔄 **Event Backbone** | Apache Kafka | Loose coupling, high throughput, eventual consistency |
-| 💳 **Payments** | Idempotent Payments | Retry/backoff, PSP-agnostic design, VietQR & PayOS integration |
-| | Saga Pattern | Choreography-based distributed transactions (no 2PC) |
-| 🔐 **Security** | Zero Trust | mTLS-ready, JWT + refresh rotation, RBAC, strict validation at gateway |
-| 📈 **Observability** | ELK + OTel | Centralized logging, distributed tracing, Prometheus + Grafana metrics |
+The system demonstrates:
 
----
+- Ride booking, driver management, ride lifecycle, pricing, payment, notification, and review domains.
+- Synchronous service communication over HTTP through an API Gateway.
+- Asynchronous business workflows over Apache Kafka.
+- Database-per-service ownership using PostgreSQL, MongoDB, and Redis.
+- Transactional outbox, inbox deduplication, idempotency, retries, compensation, and dead-letter topics.
+- OpenAPI and JSON Schema contracts as shared integration boundaries.
+- Centralized logs, metrics, traces, dashboards, and alerts.
 
-## 🏗️ Architecture
+> **Project status:** this repository is suitable for local development, architecture demonstrations, automated testing, and production-like experiments. The supplied Compose files are single-host deployments and require the hardening steps described in [Production Deployment](#production-deployment) before being used in a real production environment.
 
-```mermaid
-flowchart LR
-  subgraph Clients
-    C1[Customer App]
-    C2[Driver App]
-    C3[Admin Dashboard]
-  end
+## Architecture
 
-  C1 --> GW
-  C2 --> GW
-  C3 --> GW
+![Cab Booking System architecture][system-architecture-diagram]
 
-  GW[API Gateway] --> AUTH[Auth Service]
-  GW --> USER[User Service]
-  GW --> BOOK[Booking Service]
-  GW --> RIDE[Ride Service]
-  GW --> DRIVER[Driver Service]
-  GW --> PAY[Payment Service]
-  GW --> PRICE[Pricing Service]
-  GW --> ETA[ETA Service]
-  GW --> PLACES[Places Service]
-  GW --> AI[AI Service]
-  GW --> NOTI[Notification Service]
-  GW --> REVIEW[Review Service]
+### Architectural Principles
 
-  RT[Realtime Gateway<br/>WebSocket] <--> C2
-  RT <--> RIDE
+| Principle                  | Implementation                                                                                                              |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Single entry point         | Clients call the API Gateway, which validates authentication, applies rate limits, and proxies requests to domain services. |
+| Domain ownership           | Each service owns its business logic and data. Services do not share application tables.                                    |
+| Hybrid communication       | HTTP is used for request-response operations; Kafka is used for distributed state propagation and compensation workflows.   |
+| Contract-first integration | REST contracts live in `contracts/openapi`; event envelopes and payload schemas live in `contracts/events`.                 |
+| Reliable event processing  | Booking, ride, and payment workflows use outbox/inbox patterns, idempotency, retry policies, and DLQ routing.               |
+| Observable by default      | Services expose structured logs and telemetry that can be collected by ELK, OpenTelemetry, Prometheus, Tempo, and Grafana.  |
 
-  subgraph Data Stores
-    PG[(PostgreSQL)]
-    MG[(MongoDB)]
-    RD[(Redis)]
-  end
+### Gateway Implementations
 
-  AUTH --> PG
-  USER --> PG
-  DRIVER --> PG
-  BOOK --> PG
-  RIDE --> MG
-  NOTI --> MG
-  REVIEW --> PG
-  PRICE --> RD
-  RIDE --> RD
-  PAY --> PG
-  PLACES --> PG
+The repository contains two gateway implementations:
 
-  subgraph Messaging
-    KAFKA[(Kafka)]
-  end
+- `services/gateway`: Go gateway used by `infra/docker-compose.dev.yml` for local and load-test workloads.
+- `services/api-gateway`: Node.js/Express gateway used by `infra/docker-compose.pro.yml` and available for feature-parity development.
 
-  BOOK <--> KAFKA
-  RIDE <--> KAFKA
-  PAY <--> KAFKA
-  NOTI --> KAFKA
+Both expose the gateway on HTTP port `3000` and development HTTPS port `3443`.
+
+## Components
+
+### Backend Services
+
+The **Host access** column reflects the default local stack in `infra/docker-compose.dev.yml`. Services without a published host port remain reachable inside the Docker `backend` network through the API Gateway.
+
+| Service                |  Internal port | Host access    | Data store               | Responsibility                                                                                                  |
+| ---------------------- | -------------: | -------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `api-gateway`          | `3000`, `3443` | `3000`, `3443` | None                     | Authentication enforcement, routing, rate limiting, retry, and circuit breaking.                                |
+| `auth-service`         |         `4001` | Gateway only   | PostgreSQL               | Registration, login, access tokens, refresh tokens, logout, and token verification.                             |
+| `user-service`         |         `4004` | Gateway only   | PostgreSQL               | User profiles, roles, statuses, and internal user lookup.                                                       |
+| `driver-service`       |         `3011` | `3011`         | PostgreSQL, Redis        | Driver profiles, vehicles, availability, heartbeat, and location/geo state.                                     |
+| `booking-service`      |         `3003` | `3003`         | PostgreSQL, Kafka        | Booking lifecycle, price snapshot, driver-selection workflow, payment initialization, and booking outbox/inbox. |
+| `ride-service`         |         `3005` | Gateway only   | MongoDB, Redis, Kafka    | Ride state machine, assignment, ride event processing, and ride outbox/inbox.                                   |
+| `pricing-service`      |         `3006` | `3006`         | Redis                    | Fare quotes, rate rules, surge configuration, coupons, and quote finalization.                                  |
+| `payment-service`      |         `3007` | `3007`         | PostgreSQL, Redis, Kafka | Payment lifecycle, VietQR/PayOS integration, wallet/withdrawals, and payment events.                            |
+| `notification-service` |         `3010` | Gateway only   | MongoDB                  | Notification persistence, preferences, dispatch, deduplication, and retry.                                      |
+| `review-service`       |         `3009` | Gateway only   | PostgreSQL, Redis        | Ratings, comments, tips, moderation states, and idempotency.                                                    |
+| `eta-service`          |         `3012` | `3012`         | None                     | ETA estimation.                                                                                                 |
+| `places-service`       |         `3014` | `3014`         | PostgreSQL               | Place search, recent places, and optional Nominatim integration.                                                |
+| `ai-service`           |         `3013` | `3013`         | In-memory/config         | Driver recommendation, fraud scoring, demand forecasting, drift checks, and agent decisions.                    |
+
+### Client Applications
+
+| Application            | Technology                | Purpose                                                                                          |
+| ---------------------- | ------------------------- | ------------------------------------------------------------------------------------------------ |
+| `apps/customer-app`    | React Native, Expo        | Search, quote, booking, ride tracking, payment, history, profile, and reviews.                   |
+| `apps/driver-app`      | React Native, Expo Router | Driver availability, incoming requests, ride execution, location updates, earnings, and profile. |
+| `apps/admin-dashboard` | React, Vite               | Operations dashboards, user/driver/ride/payment management, pricing tools, logs, and monitoring. |
+
+### Data Ownership
+
+| Store      | Owning domains                                       | Primary use                                                                 |
+| ---------- | ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| PostgreSQL | Auth, user, driver, booking, payment, review, places | Transactional relational data and service-owned outbox/inbox tables.        |
+| MongoDB    | Ride, notification                                   | Ride documents, state history, event processing records, and notifications. |
+| Redis      | Driver, ride, pricing, payment, review               | Driver geo/presence, caching, quote storage, locks, and idempotency.        |
+| Kafka      | Booking, ride, payment                               | Distributed workflow events, retry topics, and dead-letter topics.          |
+
+## Core Workflows
+
+### Booking and Ride Creation
+
+![Booking and ride creation workflow][booking-workflow-diagram]
+
+The booking service owns the booking record and immutable price snapshot. The ride service owns the ride state machine:
+
+```text
+REQUESTED -> ASSIGNED -> ARRIVING -> IN_PROGRESS -> COMPLETED
+                   \                         \
+                    +--------> CANCELLED <----+
 ```
 
-**API Gateway** — single entry point enforcing auth, routing, rate limiting, and schema validation.
-**Realtime Gateway** — isolates WebSocket traffic for low-latency GPS streaming.
-**Database-per-service** — each microservice owns its data store.
-**Kafka** — async event backbone for all cross-service workflows.
+### Payment Completion and Compensation
 
----
+![Payment completion and compensation workflow][payment-workflow-diagram]
 
-## 🧩 Services
+Payment state follows:
 
-| # | Service | Port | Database | Responsibility |
-|---|---------|------|----------|----------------|
-| 1 | `api-gateway` | 3000 | — | Entry point: auth, routing, rate limiting, validation |
-| 2 | `auth-service` | 4001 | PostgreSQL | Register, login, JWT issuance, refresh token rotation |
-| 3 | `user-service` | 4004 | PostgreSQL | Customer profiles, preferences, ride history |
-| 4 | `driver-service` | 3011 | PostgreSQL + Redis | Driver profile, availability, GPS state |
-| 5 | `booking-service` | 3003 | PostgreSQL | Create booking, price snapshot, driver selection, emit events |
-| 6 | `ride-service` | 3005 | MongoDB + Redis | Ride lifecycle state machine, real-time GPS relay |
-| 7 | `pricing-service` | 3006 | Redis | Fare estimation, surge multiplier, coupons |
-| 8 | `payment-service` | 3007 | PostgreSQL + Redis | Payment execution, idempotency, VietQR/PayOS, Saga |
-| 9 | `eta-service` | 3012 | — | Event-driven ETA computation, cache-first |
-| 10 | `places-service` | 3014 | PostgreSQL | Address autocomplete, geocoding (OpenStreetMap) |
-| 11 | `ai-service` | 3013 | — | AI-assisted driver matching engine |
-| 12 | `notification-service` | 3010 | MongoDB | Push/SMS/email notifications from Kafka events |
-| 13 | `review-service` | 3009 | PostgreSQL + Redis | Ratings & feedback after ride completion |
-
----
-
-## 🗄️ Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Runtime** | Node.js 20+ | Backend services + frontend tooling |
-| **API Framework** | Express.js | REST endpoints for all microservices |
-| **Real-time** | WebSocket | Driver GPS streaming to passengers |
-| **Relational DB** | PostgreSQL 16 | Auth, users, drivers, bookings, payments, reviews, places |
-| **Document DB** | MongoDB 7 | Rides, notifications |
-| **Cache + Geo** | Redis 7 | Ride state cache, pricing metrics, geo-spatial queries |
-| **Messaging** | Apache Kafka 7.6 | Async event backbone, outbox/inbox pattern |
-| **Observability** | Elasticsearch, Logstash, Kibana, Prometheus, Tempo, Grafana, OpenTelemetry | Logs, metrics, distributed tracing |
-| **Mobile** | React Native (Expo) | Customer & Driver apps |
-| **Web** | React + Vite | Admin dashboard |
-| **Infra** | Docker Compose | Local development & staging |
-
----
-
-## 📂 Project Structure
-
-```
-cab-booking-system/
-├── apps/                              # Frontend clients
-│   ├── customer-app/                  # React Native (Expo) — ride booking, live tracking
-│   ├── driver-app/                    # React Native (Expo) — ride acceptance, GPS streaming
-│   └── admin-dashboard/               # React + Vite — monitoring, management
-│
-├── services/                          # Backend microservices (13 services)
-│   ├── api-gateway/                   # Entry point, routing, auth enforcement
-│   ├── auth-service/                  # Registration, login, JWT, refresh tokens
-│   ├── user-service/                  # Customer profiles & history
-│   ├── driver-service/                # Driver profiles, availability, GPS
-│   ├── booking-service/               # Booking creation, price snapshot, events
-│   ├── ride-service/                  # Ride lifecycle, GPS relay, Redis geo-index
-│   ├── pricing-service/               # Fare estimation, surge multiplier, coupons
-│   ├── payment-service/               # Payment processing, VietQR, PayOS, Saga
-│   ├── eta-service/                   # Cache-first ETA computation
-│   ├── places-service/                # Address search, geocoding
-│   ├── ai-service/                    # AI driver matching engine
-│   ├── notification-service/          # Push/SMS/email notifications
-│   └── review-service/                # Post-ride ratings & reviews
-│
-├── libs/                              # Shared libraries
-│   ├── http/                          # Typed HTTP client with retries & circuit breaker
-│   ├── kafka/                         # Producer/consumer wrappers, serialization
-│   ├── observability/                 # OpenTelemetry helpers, metrics, tracing
-│   ├── resilience/                    # Circuit breaker, retry, bulkhead patterns
-│   ├── security/                      # JWT helpers, RBAC utilities
-│   ├── types/                         # Generated TypeScript types from OpenAPI specs
-│   └── validation/                    # Request schema validation
-│
-├── contracts/                         # Single source of truth
-│   ├── openapi/                       # REST API specs (12 YAML files)
-│   ├── events/                        # Kafka event schemas & catalog
-│   └── state-machines/                # Payment & ride state machine diagrams
-│
-├── infra/                             # Infrastructure as Code
-│   ├── docker-compose.dev.yml         # Full dev stack (services + Kafka + DBs)
-│   ├── docker-compose.kafka.prodlike.yml  # Production-like Kafka cluster
-│   ├── docker-compose.pro.yml         # Production compose
-│   ├── postgres/                      # Init scripts & seed SQL
-│   ├── mongo/                         # MongoDB init scripts
-│   ├── kafka/                         # Kafka configs & topic bootstrapping
-│   ├── env/                           # Environment-specific override files
-│   └── observability/                 # Observability stack compose
-│
-├── scripts/                           # Automation & testing
-│   ├── healthcheck.js                 # Service health verification
-│   ├── seed-all.js                    # Seed demo data across all services
-│   ├── start-all.ps1                  # Full stack launcher (Windows)
-│   ├── start-all.cmd                  # Full stack launcher wrapper
-│   ├── test-all-services.sh           # Run all test suites
-│   └── test-level*-*.sh               # Level-specific test suites (1–10)
-│
-├── docs/                              # Architecture & operations
-│   ├── adr/                           # Architecture Decision Records
-│   ├── architecture/                  # High-level diagrams & docs
-│   ├── runbooks/                      # Incident response & SRE guides
-│   ├── observability/                 # Observability setup & migration notes
-│   └── sequence-diagrams/             # Detailed flow diagrams
-│
-├── .env                               # Environment variables (gitignored)
-├── package.json                       # Root workspace config & npm scripts
-└── README.md                          # ← This file
+```text
+INITIATED -> PROCESSING -> PAID -> REFUNDED
+     \             \
+      +----------> FAILED -> REFUNDED
 ```
 
----
+### Driver Availability and Location
 
-## 🔄 System Flows
+Driver availability and GPS updates currently use authenticated REST endpoints through the gateway:
 
-### 1. Registration → User Profile (Event-driven)
+1. The driver app sets the driver online or offline.
+2. Location updates are handled by `driver-service`.
+3. PostgreSQL stores the durable last location.
+4. Redis stores short-lived presence, location, and geo indexes for nearby-driver queries.
+5. Booking and AI workflows use driver availability data when selecting a driver.
 
-Auth stores credentials only; User Service owns profile data — decoupled via Kafka.
+The frontend applications contain optional WebSocket clients and polling fallbacks, but the default Docker Compose stack does **not** deploy a production realtime WebSocket gateway. The admin dashboard includes a mock realtime server for UI demonstrations.
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant Client
-  participant Auth as Auth Service
-  participant Kafka
-  participant User as User Service
+## Event-Driven Design
 
-  Client->>Auth: POST /auth/register
-  Auth-->>Client: 201 Created (userId + tokens)
-  Auth->>Kafka: Publish UserRegistered
-  Kafka->>User: Consume UserRegistered
-  User->>User: Create profile in PostgreSQL
+All governed events use a common envelope:
+
+```text
+eventId, type, version, traceId, occurredAt, payload
 ```
 
-✅ Clear separation of concerns · Loose coupling via events · Easy to swap Auth for OAuth2/SSO
+Important runtime topics include:
 
-### 2. Login + Refresh Token Rotation
+| Topic                     | Producer                             | Consumers                     | Purpose                                                 |
+| ------------------------- | ------------------------------------ | ----------------------------- | ------------------------------------------------------- |
+| `ride.created`            | Booking service                      | Ride service, payment service | Starts downstream ride/payment processing.              |
+| `ride_events`             | Booking service                      | None                          | Compatibility event for ride-request workflows.         |
+| `ride_accepted`           | Booking service                      | None                          | Compatibility event emitted when a booking is accepted. |
+| `ride.assigned`           | Ride service                         | Ride service, payment service | Propagates assignment state.                            |
+| `ride.cancelled`          | Booking service                      | Ride service, payment service | Propagates user cancellation or payment compensation.   |
+| `payment.completed`       | Payment service                      | Ride service, booking service | Synchronizes successful payment state.                  |
+| `payment.failed`          | Payment service                      | Ride service, booking service | Triggers failure handling and booking compensation.     |
+| `driver.location.updated` | Contract-only in the current runtime | Ride service contract guard   | Reserved for event-driven location propagation.         |
+| `review.created`          | Contract-only in the current runtime | None                          | Reserved for review integrations.                       |
 
-Short-lived access tokens + rotating refresh tokens stored in Redis for fast validation and revocation.
+Topic policy is defined in `infra/kafka/topic-policy.json`. The bootstrap script provisions:
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant Client
-  participant GW as API Gateway
-  participant Auth as Auth Service
-  participant Redis
+- Main topics.
+- Retry tiers: `<topic>.retry.30s`, `<topic>.retry.5m`, and `<topic>.retry.30m`.
+- Dead-letter topics: `<topic>.dlq`.
 
-  Client->>GW: POST /auth/login (email, password)
-  GW->>Auth: Forward login
-  Auth->>Auth: Verify credentials
-  Auth->>Redis: Store refresh session
-  Auth-->>GW: accessToken + refreshToken
-  GW-->>Client: Token pair
+Event contracts and compatibility checks are maintained in:
 
-  Client->>GW: POST /auth/refresh (refreshToken)
-  GW->>Auth: Forward refresh
-  Auth->>Redis: Validate + rotate refreshToken
-  Auth-->>GW: New accessToken + new refreshToken
-  GW-->>Client: New token pair
+- `contracts/events/catalog.json`
+- `contracts/events/schema-registry/`
+- `contracts/events/topics.md`
+
+## Reliability and Security
+
+### Reliability Patterns
+
+| Pattern                 | Current implementation                                                                                                                               |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transactional outbox    | Booking and payment persist domain changes and pending events in the same PostgreSQL transaction; ride persists outbox records in MongoDB.           |
+| Inbox and deduplication | Kafka consumers record event IDs before processing to prevent duplicate side effects.                                                                |
+| Idempotency             | Mutation endpoints use idempotency keys and Redis/database-backed response or lock storage where applicable.                                         |
+| Retry and backoff       | HTTP clients, dependency startup, Kafka producers/consumers, outbox pollers, and notification dispatchers use bounded or exponential retry policies. |
+| Dead-letter handling    | Invalid or exhausted events are routed to `<source-topic>.dlq`.                                                                                      |
+| Compensation            | Payment failure can cancel the booking and publish `ride.cancelled` without distributed two-phase commit.                                            |
+| Circuit breaking        | Gateway and booking-to-pricing calls include configurable circuit-breaker behavior.                                                                  |
+
+### Security Boundaries
+
+- JWT access tokens protect user-facing APIs.
+- Gateway and service middleware enforce role- and ownership-based authorization.
+- Internal endpoints use an `x-internal-key` boundary where configured.
+- Helmet, CORS, payload limits, schema validation, and rate limiting protect HTTP entry points.
+- The gateway can serve HTTPS with development certificates.
+
+The local stack intentionally uses development defaults such as `dev-secret`, `dev-internal-key`, Kafka PLAINTEXT, and unauthenticated Redis/MongoDB. Replace these controls before any shared or production deployment.
+
+## Repository Structure
+
+```text
+.
+├── apps/                       # Customer, driver, and admin applications
+├── services/                   # Gateway and domain microservices
+├── libs/                       # Shared HTTP, validation, resilience, security, and telemetry libraries
+├── contracts/
+│   ├── openapi/                # REST API contracts
+│   ├── events/                 # Event catalog and JSON schemas
+│   └── state-machines/         # Ride, payment, and review state machines
+├── infra/
+│   ├── docker-compose.dev.yml  # Local backend stack and development tools
+│   ├── docker-compose.pro.yml  # Production-shaped single-host stack
+│   ├── docker-compose.kafka.prodlike.yml
+│   ├── postgres/               # Database creation and local seed scripts
+│   ├── mongo/                  # MongoDB local seed scripts
+│   ├── kafka/                  # Kafka topic policy and deployment notes
+│   └── observability/          # ELK, OTel, Prometheus, Tempo, Grafana, and Alertmanager
+├── scripts/                    # Health, seed, contract, Postman, k6, and test automation
+├── docs/                       # Architecture, runbooks, reports, and sequence diagrams
+├── package.json                # npm workspaces and root automation
+└── README.md
 ```
 
-✅ Short-lived access tokens · Refresh rotation prevents replay · Redis-backed fast lookup & revocation
+## Production Deployment
 
-### 3. Booking End-to-End
+Before deploying to a shared staging or production environment:
 
-Customer requests ride → Booking snapshots price → selects driver → Ride Service manages lifecycle.
+1. Build immutable service images in CI and publish them to a private registry. Do not build application images on production hosts.
+2. Move secrets to a secret manager. Rotate `JWT_SECRET`, `INTERNAL_API_KEY`, database credentials, provider credentials, and webhook secrets.
+3. Expose only a load balancer or ingress in front of the API Gateway. Remove direct public service ports and development UIs.
+4. Terminate trusted TLS certificates at the ingress or gateway. Encrypt and authenticate service-to-service, Kafka, database, and cache traffic.
+5. Replace local PostgreSQL, MongoDB, Redis, and Kafka containers with highly available managed or clustered deployments with backups and recovery procedures.
+6. Run service migrations as an explicit deployment job before starting new application versions. Do not rely on local seed scripts.
+7. Deploy multiple stateless service replicas, configure readiness/liveness probes, and set resource requests, limits, autoscaling, and disruption policies.
+8. Deploy `places-service` separately if place search is required, because it is not present in `infra/docker-compose.pro.yml`.
+9. Configure external payment providers, verified PayOS webhooks, alert receivers, retention policies, dashboards, and incident runbooks.
+10. Keep demo credentials, seed data, self-signed certificates, mock realtime servers, and tracked local `.env` values out of production.
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant Customer
-  participant GW as API Gateway
-  participant Booking as Booking Service
-  participant Kafka
-  participant Ride as Ride Service
-  participant Noti as Notification Service
-  participant Driver as Driver App
+For Kubernetes or another orchestrator, use the service boundaries and environment variables in the Compose files as the deployment mapping, then add managed secrets, service discovery, autoscaling, health probes, and network policies.
 
-  Customer->>GW: POST /bookings
-  GW->>Booking: createBooking
-  Booking->>Booking: Persist booking + price snapshot
-  Booking->>Kafka: Publish ride.created
-  Booking->>Booking: Select driver (AI + rule-based)
-  Booking->>Kafka: Publish ride.assigned
-  Booking-->>GW: 201 Created
-  GW-->>Customer: Booking accepted
+## Configuration
 
-  Kafka->>Ride: Consume ride.assigned
-  Ride->>Ride: State → ASSIGNED
-  Kafka->>Noti: Consume ride.assigned
-  Noti-->>Driver: Push notification
-  Driver->>GW: Accept ride
-  Noti-->>Customer: "Driver assigned"
+The repository includes local `.env` files for development. Review them before starting the stack and never store real production credentials in the repository.
+
+Important configuration groups:
+
+| Group             | Examples                                                                                      |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| Authentication    | `JWT_SECRET`, `JWT_ACCESS_SECRET`, `AUTH_JWT_SECRET`, `JWT_ALGORITHMS`                        |
+| Internal trust    | `INTERNAL_API_KEY`                                                                            |
+| Gateway           | `RATE_LIMIT_MAX`, `PROXY_TIMEOUT_MS`, `GATEWAY_HTTPS_ENABLED`, `HTTPS_PORT`                   |
+| Databases         | `DATABASE_URL`, `MONGODB_URI`, `REDIS_URL`                                                    |
+| Kafka             | `KAFKA_BROKERS`, consumer group/retry settings, producer acknowledgement settings             |
+| Event reliability | `OUTBOX_*`, `INBOX_*`, Kafka retry and DLQ topic settings                                     |
+| Payments          | `VIETQR_*`, `PAYOS_*`, compensation and auto-sync settings                                    |
+| Places            | `PLACES_PROVIDER_*`                                                                           |
+| Observability     | `OTEL_EXPORTER_OTLP_ENDPOINT`, `DEPLOY_ENV`, `LOGSTASH_SYSLOG_HOST`, alert receiver variables |
+
+Compose provides insecure local defaults for several values. Override them through the environment or a deployment-specific env file.
+
+## Observability
+
+```text
+Application logs -> Logstash -> Elasticsearch -> Kibana
+OTel metrics      -> OTel Collector -> Prometheus -> Grafana
+OTel traces       -> OTel Collector -> Tempo -> Grafana
+Prometheus rules  -> Alertmanager -> Webhook/Slack/Telegram
 ```
 
-✅ Price snapshot ensures billing consistency · AI matching with rule-based fallback
-
-### 4. Real-time GPS Tracking
-
-Driver streams GPS via WebSocket → Ride Service updates Redis Geo → Passenger gets live position.
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant Driver
-  participant RT as Realtime Gateway
-  participant Ride as Ride Service
-  participant Redis
-  participant Kafka
-  participant Customer
-
-  Driver->>RT: WebSocket GPS (lat, lng, heading)
-  RT->>Ride: Forward update
-  Ride->>Redis: Update geo index
-  Ride->>Kafka: Publish driver.location.updated
-  RT-->>Customer: Live position (< 1s)
-```
-
-✅ Redis Geo for spatial queries · Kafka events for analytics/monitoring · WebSocket optimized for UI latency
-
-### 5. AI Driver Matching
-
-Redis Geo for spatial queries + feature scoring engine + rule-based fallback for reliability.
-
-### 6. Payment Processing
-
-Idempotent payment → PSP call (VietQR/PayOS) → retry with exponential backoff → Saga on failure.
-
-```mermaid
-flowchart TD
-  A[Payment Request] --> B[Create Payment: PENDING]
-  B --> C[Call PSP Provider]
-  C -->|Timeout / Transient| D[Retry with exponential backoff]
-  D --> C
-  C -->|Success| E[State: PAID → emit payment.completed]
-  C -->|Permanent Fail| F[State: FAILED → emit payment.failed]
-  F --> G[Notify customer + trigger compensation Saga]
-```
-
-✅ Idempotency keys prevent double-charging · PSP-agnostic design · Event-driven state propagation
-
-### 7. Payment Saga (Choreography)
-
-No central orchestrator. Each service reacts to payment events independently — `payment.completed` triggers ride activation, `payment.failed` triggers booking compensation.
-
-### 8. Surge Pricing
-
-Pricing Service monitors demand/supply ratio in Redis → adjusts surge multiplier in near real-time → Booking snapshots price at creation time for billing consistency.
-
----
-
-## 📨 Kafka Topics
-
-| Topic | Producer | Consumers |
-|-------|----------|-----------|
-| `ride.created` | `booking-service` | `payment-service`, `ride-service` |
-| `ride.assigned` | `ride-service` | `payment-service`, `ride-service` |
-| `ride.cancelled` | `booking-service` | `payment-service`, `ride-service` |
-| `driver.location.updated` | `ride-service` | — (analytics/monitoring) |
-| `payment.completed` | `payment-service` | `ride-service` |
-| `payment.failed` | `payment-service` | `ride-service` |
-| `review.created` | `review-service` | — |
-
-> Topics bootstrapped via `npm run kafka:topics:bootstrap`. Event schemas live in `contracts/events/`.
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Docker Desktop** with Compose v2
-- **Node.js 18+**
-
-### 1. Start the full stack
-
-```bash
-git clone <repo-url> && cd cab-booking-system
-npm run dev:infra
-```
-
-Launches 13 microservices + PostgreSQL, MongoDB, Redis, Kafka, Zookeeper.
-
-### 2. Bootstrap Kafka topics
-
-```bash
-npm run kafka:topics:bootstrap
-```
-
-### 3. Seed demo data
-
-```bash
-npm run seed:all
-```
-
-### 4. Verify health
-
-```bash
-npm run health
-```
-
-### Useful Commands
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev:infra` | Start all services + infrastructure |
-| `npm run dev:observability` | Start services + ELK + Grafana + Tempo + Prometheus |
-| `npm run down:infra` | Stop and remove all containers & volumes |
-| `npm run logs:kafka` | Tail Kafka logs |
-| `npm run health` | Check API Gateway health (`http://localhost:3000/health`) |
-| `npm run seed:all` | Seed demo data across all services |
-| `npm run kafka:topics:bootstrap` | Create all required Kafka topics |
-| `npm run test:level5` | Run test suite level 5 (cases 41–50) |
-| `npm run test:level6` | Run test suite level 6 (cases 51–60) |
-| `npm run contracts:events:validate` | Validate event schemas |
-| `npm run contracts:events:compat` | Check backward compatibility of events |
-
-### Developer Mode (single service)
-
-```bash
-npm run dev:infra    # Start infra only
-cd services/auth-service
-npm install
-npm run dev          # Runs with nodemon on localhost
-```
-
----
-
-## 📈 Observability
-
-| Component | Endpoint | Purpose |
-|-----------|----------|---------|
-| **Kibana** | `http://localhost:5601` | Log exploration & dashboards |
-| **Elasticsearch** | `http://localhost:9200` | Log storage & indexing |
-| **Grafana** | `http://localhost:3001` | Metrics + trace visualization |
-| **Prometheus** | `http://localhost:9090` | Metrics collection |
-| **Tempo** | `http://localhost:3200` | Distributed tracing backend |
-
-### Data Flow
-
-```
-Logs:    Container stdout → Logstash → Elasticsearch → Kibana
-Traces:  OpenTelemetry SDK → OTel Collector → Tempo → Grafana
-Metrics: OpenTelemetry SDK → OTel Collector → Prometheus → Grafana
-```
-
-### Verification
-
-```bash
-curl -s http://localhost:9200/_cluster/health?pretty
-curl -s http://localhost:9200/_cat/indices/cab-logs-*?v
-curl -s "http://localhost:9200/cab-logs-*/_search?size=5&sort=@timestamp:desc"
-```
-
-> In Kibana: create data view `cab-logs-*` → filter by `service.name` and `level`.
->
-> **Docker Desktop**: uses `host.docker.internal` for Logstash syslog forwarding.
-> **Linux Docker Engine**: set `LOGSTASH_SYSLOG_HOST` to a reachable host/IP for Logstash port `5514`.
-
----
-
-## 🔐 Security
-
-| Layer | Mechanism |
-|-------|-----------|
-| **Edge** | TLS (HTTPS), rate limiting, Helmet headers |
-| **Gateway** | JWT validation, RBAC enforcement, strict schema validation |
-| **Service-to-Service** | Internal API keys, mTLS-ready architecture |
-| **Sessions** | Short-lived access tokens + rotating refresh tokens (Redis-backed) |
-| **Audit** | Login/refresh, payment events, permission changes logged centrally |
-
----
-
-## 🛡️ Resilience
-
-| Pattern | Implementation |
-|---------|---------------|
-| **Circuit Breaker** | Per-service circuit breakers at API Gateway with configurable thresholds |
-| **Retry + Backoff** | Exponential backoff on Kafka consumers & HTTP clients |
-| **Idempotency** | Idempotency keys on all payment & booking mutations |
-| **Outbox Pattern** | Guaranteed event publication via transactional outbox |
-| **Inbox Pattern** | Deduplicated event consumption via idempotent inbox |
-| **Graceful Degradation** | Pricing fallback to cached rates, AI fallback to rule-based matching |
-
----
-
-## 📄 License
-
-MIT
-
----
-
-<div align="center">
-  <sub>Built for scalability, reliability, and developer experience.</sub>
-</div>
-
-## 📈 Observability
-
-| Component | Endpoint | Purpose |
-|-----------|----------|---------|
-| **Kibana** | `http://localhost:5601` | Log exploration & dashboards |
-| **Elasticsearch** | `http://localhost:9200` | Log storage & indexing |
-| **Grafana** | `http://localhost:3001` | Metrics + trace visualization |
-| **Prometheus** | `http://localhost:9090` | Metrics collection |
-| **Tempo** | `http://localhost:3200` | Distributed tracing backend |
-
-### Data Flow
-
-```
-Logs:    Container stdout → Logstash → Elasticsearch → Kibana
-Traces:  OpenTelemetry SDK → OTel Collector → Tempo → Grafana
-Metrics: OpenTelemetry SDK → OTel Collector → Prometheus → Grafana
-```
-
-### Verification
-
-```bash
-curl -s http://localhost:9200/_cluster/health?pretty
-curl -s http://localhost:9200/_cat/indices/cab-logs-*?v
-curl -s "http://localhost:9200/cab-logs-*/_search?size=5&sort=@timestamp:desc"
-```
-
-> In Kibana: create data view `cab-logs-*` → filter by `service.name` and `level`.
->
-> **Docker Desktop**: uses `host.docker.internal` for Logstash syslog forwarding.
-> **Linux Docker Engine**: set `LOGSTASH_SYSLOG_HOST` to a reachable host/IP for Logstash port `5514`.
-
----
-
-## 🔐 Security
-
-| Layer | Mechanism |
-|-------|-----------|
-| **Edge** | TLS (HTTPS), rate limiting, Helmet headers |
-| **Gateway** | JWT validation, RBAC enforcement, strict schema validation |
-| **Service-to-Service** | Internal API keys, mTLS-ready architecture |
-| **Sessions** | Short-lived access tokens + rotating refresh tokens (Redis-backed) |
-| **Audit** | Login/refresh, payment events, permission changes logged centrally |
-
----
-
-## 🛡️ Resilience
-
-| Pattern | Implementation |
-|---------|---------------|
-| **Circuit Breaker** | Per-service circuit breakers at API Gateway with configurable thresholds |
-| **Retry + Backoff** | Exponential backoff on Kafka consumers & HTTP clients |
-| **Idempotency** | Idempotency keys on all payment & booking mutations |
-| **Outbox Pattern** | Guaranteed event publication via transactional outbox |
-| **Inbox Pattern** | Deduplicated event consumption via idempotent inbox |
-| **Graceful Degradation** | Pricing fallback to cached rates, AI fallback to rule-based matching |
-
----
-
-## 📄 License
-
-MIT
-
----
-
-<div align="center">
-  <sub>Built for scalability, reliability, and developer experience.</sub>
-</div>
+| Component     | URL                     | Purpose                                                               |
+| ------------- | ----------------------- | --------------------------------------------------------------------- |
+| Grafana       | `http://localhost:3001` | Provisioned service, dependency, business-flow, and Kafka dashboards. |
+| Prometheus    | `http://localhost:9090` | Metrics, scrape targets, and alert rules.                             |
+| Alertmanager  | `http://localhost:9093` | Alert routing and receiver status.                                    |
+| Tempo         | `http://localhost:3200` | Distributed trace storage.                                            |
+| Kibana        | `http://localhost:5601` | Log search and dashboards.                                            |
+| Elasticsearch | `http://localhost:9200` | Central log storage.                                                  |
+
+Docker Desktop can route container logs to Logstash through `host.docker.internal`. On Linux, set `LOGSTASH_SYSLOG_HOST` to an address reachable from Docker containers.
+
+See `docs/runbooks/README.md` and `docs/runbooks/kafka-observability.md` for alert and Kafka operations.
+
+## Current Limitations
+
+- The default stack does not include a production realtime WebSocket gateway. Frontends use optional WebSocket URLs, mocks, or polling fallbacks.
+- Notification delivery is REST- and dispatcher-based; it is not currently a Kafka consumer.
+- The AI service is a heuristic/rule-based MVP intended for architecture and test scenarios.
+- Retry topics are provisioned by policy, while individual services implement their own retry and DLQ behavior.
+- The production-shaped Compose file is not a complete production platform and currently omits `places-service`.
+- Local environment files and development defaults are intentionally convenient and must not be reused for production secrets.
+
+## Documentation
+
+- `docs/README.md`: detailed repository and service reference.
+- `docs/sequence-diagrams/main-event-flows.md`: event-driven sequence diagrams.
+- `contracts/openapi/`: REST API contracts.
+- `contracts/events/`: event catalog, schemas, and runtime topic documentation.
+- `contracts/state-machines/`: ride, payment, and review state machines.
+- `infra/kafka/README.md`: Kafka profiles and topic governance.
+- `docs/runbooks/`: operational and incident-response runbooks.
+
+[system-architecture-diagram]: https://kroki.io/mermaid/png/eNp1VE1vgzAMvfMrcuwO_QfTJNpOE1q3di07RT1k4EJUICgJrfrvl88S2HIgNu-92E5sODfsVtSES5SvEoTE8FNx0tdo3VDopFAQQutBSNYCx95Bad-fDLXh9KoIa0Y4LVvaYbOiDRH1DyO81BR0ZZKMEdFy-YLeiIQbuSc-2gy0UUJMgc7F6T7z_slo0kHWWC_oCPxKCziNaiP4FqpevcQEtghH-pNFtCvGLrSrsLMx2YGWgPUSE-w5LXQcZ6Mycm9VV7CzMdknk_RMCyIp63D4Eq0PrhRu2Jpo8oYUILA1MdFrnmL1xOg0w2k2kor1NxfcwgxV4WZIms032vtQ6OS0vt1hnmcNvpPzheCFMU-6RtObkVKIv-IA1LOoB8tkZEJWXF3HwnnHr62JZCYrVDzG2p16Tk7OMcI-_wx2LZqLbU8m6L95D1BSVbMx48EfjA7lJnCCBbVYLNz5wbqK4YUxm5WJ-qcLhtS7XDECZ52QfNBhoXyg9hPe5dDgXQ-dstCC5He0Zk0DhWRcR9e8mxf1D5E1DCJEc2h7FqQy4JZVQqofkcK9a4erIULSQgDhRZ38Aoz8nHU
+[booking-workflow-diagram]: https://kroki.io/mermaid/png/eNp1kUFvgzAMhe_7FT5umjq0K4dKpUho2qSxtlLPIaQQFRLqJGz993MgbBRtp5j4e-H52YiLE4qLVLIKWXsHwJzVyrWFQP_BrUbYOmN1O1x0DK3ksmPKQnYEZmCTv0DGrPhk10U_0fosVeWhqdwL7CUXCzBHqkZwKv8G02T-WK6NrVDsP94W2Cs7ndnibidL4cXD-Y8Ndm0Fnd5GKCeQyCmE1XqdHWPI3_cHiPrnqBjdGEKyIzWDuxg2ztb0huQUTgnogzaWqAAQGoaNYTc24eK0FUCJ96yRJemgG5EbWZrEcECmDG1HahVDsACPoJ0t9Nc90pBPHIX_8wNp02Q1d7bVbSvnVsJMPwvjXHQkHUei5jT7n8ivsSF3isYVjTQ1zF3ACXUb7JFmIP3Lfh1kaICigvHzSTbNoARbo3ZVDVItNGE5PjausYw61FwYM6pE7_d2q_0GIJr-aQ
+[payment-workflow-diagram]: https://kroki.io/mermaid/png/eNptkU1SwzAMhfc9hfZMeoAsOkPpDhal4QKKoyaeOrbxT4dwemQThzZ05b_3pO_Jnj4jaUEHib3DcQOAMRgdx5YcHyy6IIW0qAMccRqJV_TLtiF3lYIeCw_7W-nR-NA7at7fVupXPF9wdXeSHSVzXh832RtzkbpPqrItQlbOXavdboGp4cOh9iiCNLqGaDsMxCV_8Z7AxNCaL6ArH-8qZMC6KLfCjFZRoA6MWy7PKBV1bMviil0JvYZna9UELsUIqbtMzSEMzsR-AKm5461pTlJDM2nBIi2_Cdo5XkH1gcFTSFThPwCUcfyRH2OrpB8yxlYg_7ZiLaQgxANJSNm4Yn_Jyuy6f55HU9LNCJVPKVdFSXebHzAW1FM
