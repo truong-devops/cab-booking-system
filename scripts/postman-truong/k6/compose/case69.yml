@@ -1,0 +1,26 @@
+services:
+  k6:
+    extends:
+      file: ../docker-compose.k6.quick.yml
+      service: k6-case69
+    environment:
+      # Case69 profile: ramp load tăng dần trong 20s, ưu tiên ổn định p95.
+      CASE69_START_RATE: ${CASE69_START_RATE:-100}
+      CASE69_STAGE1: ${CASE69_STAGE1:-150}
+      CASE69_STAGE2: ${CASE69_STAGE2:-300}
+      CASE69_STAGE3: ${CASE69_STAGE3:-500}
+      CASE69_STAGE4: ${CASE69_STAGE4:-700}
+      CASE69_STAGE1_DURATION: ${CASE69_STAGE1_DURATION:-5s}
+      CASE69_STAGE2_DURATION: ${CASE69_STAGE2_DURATION:-5s}
+      CASE69_STAGE3_DURATION: ${CASE69_STAGE3_DURATION:-5s}
+      CASE69_STAGE4_DURATION: ${CASE69_STAGE4_DURATION:-5s}
+      CASE69_VUS: ${CASE69_VUS:-400}
+      CASE69_MAX_VUS: ${CASE69_MAX_VUS:-2000}
+      CASE69_TIMEOUT: ${CASE69_TIMEOUT:-3s}
+
+      # Nhiều user/token mới để tránh xung đột ACTIVE_BOOKING_EXISTS.
+      CASE69_TOKEN_COUNT: ${CASE69_TOKEN_COUNT:-13000}
+      AUTO_AUTH_FIXED_POOL: ${AUTO_AUTH_FIXED_POOL:-false}
+      AUTO_AUTH_USER_PREFIX: ${AUTO_AUTH_USER_PREFIX:-case69_peak_user}
+      # Để trống để không dùng cache cũ, luôn tạo token mới theo run.
+      CASE69_TOKENS_FILE: ${CASE69_TOKENS_FILE:-}

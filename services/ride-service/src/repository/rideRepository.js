@@ -6,6 +6,7 @@ const ASSIGNMENT_EXCLUDED_RIDE_IDS = [
   '99999999-9999-9999-9999-999999999997',
   '99999999-9999-9999-9999-999999999996'
 ];
+const ASSIGNMENT_REQUEST_TTL_MS = Number(process.env.DRIVER_ASSIGNMENT_REQUEST_TTL_MS || 15 * 60 * 1000);
 
 function isEightDigitId(value) {
   return typeof value === 'string' && /^\d{8}$/.test(value.trim());
@@ -20,9 +21,25 @@ function normalizeIdentityId(value) {
 
 function buildRealCustomerRideFilter() {
   return {
-    booking_id: { $type: 'string', $ne: '' },
+    booking_id: { $type: 'string', $regex: /^bk_/ },
+    external_ride_id: { $type: 'string', $regex: /^ride_/ },
     rider_id: { $regex: /^\d{8}$/ }
   };
+}
+
+function buildAssignableRideFilter() {
+  const filter = {
+    _id: { $nin: ASSIGNMENT_EXCLUDED_RIDE_IDS },
+    ...buildRealCustomerRideFilter(),
+    status: 'requested',
+    driver_id: null
+  };
+
+  if (Number.isFinite(ASSIGNMENT_REQUEST_TTL_MS) && ASSIGNMENT_REQUEST_TTL_MS > 0) {
+    filter.created_at = { $gte: new Date(Date.now() - ASSIGNMENT_REQUEST_TTL_MS) };
+  }
+
+  return filter;
 }
 
 function mapRide(doc) {
@@ -430,12 +447,7 @@ async function claimRideForDriver({ driverId, traceId = null } = {}) {
     }
 
     const rideResult = await db.collection('rides').findOneAndUpdate(
-      {
-        _id: { $nin: ASSIGNMENT_EXCLUDED_RIDE_IDS },
-        ...buildRealCustomerRideFilter(),
-        status: 'requested',
-        driver_id: null
-      },
+      buildAssignableRideFilter(),
       {
         $set: {
           driver_id: normalizedDriverId,
@@ -509,12 +521,7 @@ async function claimRideForDriver({ driverId, traceId = null } = {}) {
 async function findNextRequestedRide() {
   const db = await getDb();
   const doc = await db.collection('rides').findOne(
-    {
-      _id: { $nin: ASSIGNMENT_EXCLUDED_RIDE_IDS },
-      ...buildRealCustomerRideFilter(),
-      status: 'requested',
-      driver_id: null
-    },
+    buildAssignableRideFilter(),
     { sort: { created_at: -1, _id: -1 } } // lấy ride mới nhất còn pending
   );
   return doc ? mapRide(doc) : null;

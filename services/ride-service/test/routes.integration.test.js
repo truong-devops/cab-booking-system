@@ -101,6 +101,46 @@ describe('ride-service routes integration', () => {
     expect(response.body.data.quoteCurrency).toBe('VND');
   });
 
+  it('backfills customer quote when external ride already exists', async () => {
+    const existing = buildRideRow({
+      id: 'ride-internal-bike',
+      external_ride_id: 'ride_booking_1',
+      booking_id: 'bk_booking_1',
+      quote_fare_amount: 90000,
+      quote_currency: 'VND'
+    });
+    const updated = buildRideRow({
+      ...existing,
+      quote_fare_amount: 49500,
+      quote_currency: 'VND'
+    });
+    rideRepository.getRideByExternalId.mockResolvedValue(existing);
+    rideRepository.updateRideFields.mockResolvedValue(updated);
+    idempotencyRepository.getByKey.mockResolvedValue(null);
+
+    const response = await request(app)
+      .post('/v1/rides')
+      .set('Authorization', authHeader())
+      .set('Idempotency-Key', 'idem-existing-quote')
+      .send({
+        externalRideId: 'ride_booking_1',
+        bookingId: 'bk_booking_1',
+        pickupLat: 10.1,
+        pickupLng: 20.2,
+        dropoffLat: 10.2,
+        dropoffLng: 20.3,
+        quoteFareAmount: 49500,
+        quoteCurrency: 'VND'
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.quoteFareAmount).toBe(49500);
+    expect(rideRepository.updateRideFields).toHaveBeenCalledWith('ride-internal-bike', {
+      quoteFareAmount: 49500,
+      quoteCurrency: 'VND'
+    });
+  });
+
   it('lists rides with cursor', async () => {
     const row = buildRideRow({ id: 'ride-9' });
     rideRepository.listRides.mockResolvedValue([row]);
@@ -227,6 +267,51 @@ describe('ride-service routes integration', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.fare.amount).toBe(99000);
+      expect(response.body.data.fare.source).toBe('booking-quote');
+      expect(response.body.data.fare.paymentStatus).toBe('INITIATED');
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('uses booking quote when a non-paid payment amount exists', async () => {
+    const completedRide = buildRideRow({
+      id: 'ride-internal-4',
+      external_ride_id: 'ride_external_4',
+      status: 'completed',
+      quote_fare_amount: 95000,
+      quote_currency: 'VND',
+      created_at: new Date('2024-01-01T00:00:00Z'),
+      status_updated_at: new Date('2024-01-01T01:00:00Z')
+    });
+    rideRepository.getRideById.mockResolvedValue(completedRide);
+    rideRepository.getRideStatusHistory.mockResolvedValue([
+      { to_status: 'in_progress', occurred_at: new Date('2024-01-01T00:20:00Z') },
+      { to_status: 'completed', occurred_at: new Date('2024-01-01T01:00:00Z') }
+    ]);
+
+    const originalFetch = global.fetch;
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            id: 'pay-1',
+            rideId: 'ride_external_4',
+            amount: '120000',
+            currency: 'VND',
+            status: 'INITIATED',
+            createdAt: '2024-01-01T01:00:00Z'
+          }
+        ]
+      })
+    });
+    global.fetch = fetchMock;
+    try {
+      const response = await request(app).get('/v1/rides/ride-internal-4/summary').set('Authorization', authHeader());
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.fare.amount).toBe(95000);
       expect(response.body.data.fare.source).toBe('booking-quote');
       expect(response.body.data.fare.paymentStatus).toBe('INITIATED');
     } finally {

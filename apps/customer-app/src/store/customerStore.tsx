@@ -87,7 +87,7 @@ type CustomerContextValue = {
   assignDriverToActiveRide: (driverId: string) => void;
   refreshActiveRide: () => Promise<ActiveRide | null>;
   decreaseEta: () => void;
-  completeRidePayment: (method: string) => Promise<void>;
+  completeRidePayment: (method: string, amount?: number) => Promise<void>;
   submitRating: (stars: number, comment: string, tipAmount?: number | null) => Promise<void>;
 };
 
@@ -330,7 +330,9 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const result = await customerApi.startRide({
         pickupLabel: pickup,
         destinationLabel: destinationValue,
-        vehicleOptionId: selectedOption.id
+        vehicleOptionId: selectedOption.id,
+        quoteFareAmount: selectedOption.price,
+        quoteCurrency: selectedOption.priceBreakdown?.currency || 'VND'
       });
 
       setActiveRide({
@@ -459,9 +461,10 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const completeRidePayment = useCallback(
-    async (method: string) => {
+    async (method: string, amount?: number) => {
       if (!activeRide) throw new Error('Không có chuyến đi đang hoạt động');
-      await customerApi.createPayment(activeRide.id, method, activeRide.option.price);
+      const paymentAmount = typeof amount === 'number' && Number.isFinite(amount) ? amount : activeRide.option.price;
+      await customerApi.createPayment(activeRide.id, method, paymentAmount);
     },
     [activeRide]
   );

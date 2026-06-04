@@ -1,0 +1,5 @@
+services:
+  k6:
+    extends:
+      file: ../docker-compose.k6.quick.yml
+      service: k6-case68

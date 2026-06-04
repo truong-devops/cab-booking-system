@@ -1,0 +1,1017 @@
+{
+  "info": {
+    "_postman_id": "truong-testcase-2-1778301917390",
+    "name": "Truong Testcase Truong Hop 2 (Postman + Tool)",
+    "description": "Collection gom cac case 35,47,59,61,62,63,67,68,69,77,85,87,98. Chay request chuc nang trong Postman; case load/chiu tai dung tool de dat dung RPS.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('uniq')) pm.collectionVariables.set('uniq', Date.now() + '-' + Math.floor(Math.random() * 100000));",
+          "if (!pm.collectionVariables.get('userPass')) pm.collectionVariables.set('userPass', '123456');",
+          "const uniq = pm.collectionVariables.get('uniq');",
+          "pm.collectionVariables.set('userEmail', pm.collectionVariables.get('userEmail') || ('postman-user-' + uniq + '@test.com'));",
+          "pm.collectionVariables.set('adminEmail', pm.collectionVariables.get('adminEmail') || ('postman-admin-' + uniq + '@test.com'));",
+          "pm.collectionVariables.set('driverEmail', pm.collectionVariables.get('driverEmail') || ('postman-driver-' + uniq + '@test.com'));",
+          "pm.collectionVariables.set('replayEmail', pm.collectionVariables.get('replayEmail') || ('postman-replay-' + uniq + '@test.com'));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "httpsBaseUrl",
+      "value": "https://localhost:3443"
+    },
+    {
+      "key": "authUrl",
+      "value": "http://localhost:4001"
+    },
+    {
+      "key": "bookingUrl",
+      "value": "http://localhost:3003"
+    },
+    {
+      "key": "driverUrl",
+      "value": "http://localhost:3011"
+    },
+    {
+      "key": "etaUrl",
+      "value": "http://localhost:3012"
+    },
+    {
+      "key": "pricingUrl",
+      "value": "http://localhost:3006"
+    },
+    {
+      "key": "aiUrl",
+      "value": "http://localhost:3013"
+    },
+    {
+      "key": "paymentUrl",
+      "value": "http://localhost:3007"
+    },
+    {
+      "key": "notificationUrl",
+      "value": "http://localhost:3010"
+    },
+    {
+      "key": "prometheusUrl",
+      "value": "http://localhost:9090"
+    },
+    {
+      "key": "grafanaUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "jaegerUrl",
+      "value": "http://localhost:16686"
+    },
+    {
+      "key": "internalApiKey",
+      "value": "dev-internal-key"
+    },
+    {
+      "key": "userPass",
+      "value": "123456"
+    },
+    {
+      "key": "uniq",
+      "value": ""
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "driverEmail",
+      "value": ""
+    },
+    {
+      "key": "replayEmail",
+      "value": ""
+    },
+    {
+      "key": "expiredToken",
+      "value": "replace-with-expired-token"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "driverId",
+      "value": ""
+    },
+    {
+      "key": "driverToken",
+      "value": ""
+    },
+    {
+      "key": "driverUserId",
+      "value": ""
+    },
+    {
+      "key": "level3BookingId",
+      "value": ""
+    },
+    {
+      "key": "level3NotificationId",
+      "value": ""
+    },
+    {
+      "key": "rawCard",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "userToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status 200', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/auth/register",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{userEmail}}\",\"password\":\"{{userPass}}\",\"name\":\"Postman User {{uniq}}\",\"role\":\"user\"}"
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/auth/login",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identifier\":\"{{userEmail}}\",\"password\":\"{{userPass}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "const token = j?.tokens?.accessToken;",
+                  "const userId = j?.data?.user_id || j?.data?.id || j?.user_id || j?.id;",
+                  "pm.collectionVariables.set(pm.info.requestName.includes('Admin') ? 'adminToken' : pm.info.requestName.includes('Driver') ? 'driverToken' : 'userToken', token || '');",
+                  "if (userId) pm.collectionVariables.set(pm.info.requestName.includes('Admin') ? 'adminId' : pm.info.requestName.includes('Driver') ? 'driverUserId' : 'userId', userId);",
+                  "pm.test('Login returns token', function () { pm.expect(token).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/auth/register",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{adminEmail}}\",\"password\":\"{{userPass}}\",\"name\":\"Postman Admin {{uniq}}\",\"role\":\"admin\"}"
+            }
+          }
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/auth/login",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identifier\":\"{{adminEmail}}\",\"password\":\"{{userPass}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "const token = j?.tokens?.accessToken;",
+                  "const userId = j?.data?.user_id || j?.data?.id || j?.user_id || j?.id;",
+                  "pm.collectionVariables.set(pm.info.requestName.includes('Admin') ? 'adminToken' : pm.info.requestName.includes('Driver') ? 'driverToken' : 'userToken', token || '');",
+                  "if (userId) pm.collectionVariables.set(pm.info.requestName.includes('Admin') ? 'adminId' : pm.info.requestName.includes('Driver') ? 'driverUserId' : 'userId', userId);",
+                  "pm.test('Login returns token', function () { pm.expect(token).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/auth/register",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{driverEmail}}\",\"password\":\"{{userPass}}\",\"name\":\"Postman Driver {{uniq}}\",\"role\":\"driver\"}"
+            }
+          }
+        },
+        {
+          "name": "Login Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/auth/login",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identifier\":\"{{driverEmail}}\",\"password\":\"{{userPass}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "const token = j?.tokens?.accessToken;",
+                  "const userId = j?.data?.user_id || j?.data?.id || j?.user_id || j?.id;",
+                  "pm.collectionVariables.set(pm.info.requestName.includes('Admin') ? 'adminToken' : pm.info.requestName.includes('Driver') ? 'driverToken' : 'userToken', token || '');",
+                  "if (userId) pm.collectionVariables.set(pm.info.requestName.includes('Admin') ? 'adminId' : pm.info.requestName.includes('Driver') ? 'driverUserId' : 'userId', userId);",
+                  "pm.test('Login returns token', function () { pm.expect(token).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Driver Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/admin/drivers",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"userId\":\"{{driverUserId}}\",\"fullName\":\"Postman Driver {{uniq}}\",\"phone\":\"0900000000\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code < 300) { const j=pm.response.json(); pm.collectionVariables.set('driverId', j?.data?.driver?.id || j?.data?.id || j?.driver?.id || j?.id || ''); }",
+                  "pm.test('Create driver accepted or already exists', function () { pm.expect([200,201,409]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve Driver Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/admin/drivers/{{driverId}}/approve",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status 200', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Driver Vehicle",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driverToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/driver/me/vehicle",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"vehicleType\":\"CAR\",\"plateNumber\":\"PM-{{uniq}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status 200', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set Driver Online Near Pickup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/driver/status",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"driver_id\":\"{{driverId}}\",\"status\":\"ONLINE\",\"initial_location\":{\"lat\":10.76,\"lng\":106.66}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status 200', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Driver Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/driver/availability?lat=10.76&lng=106.66&limit=5",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status 200', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Replay User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{replayEmail}}\",\"password\":\"{{userPass}}\",\"name\":\"Level9 Replay User {{uniq}}\",\"role\":\"user\"}"
+            },
+            "url": "{{baseUrl}}/v1/auth/register"
+          }
+        },
+        {
+          "name": "Login Replay User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identifier\":\"{{replayEmail}}\",\"password\":\"{{userPass}}\"}"
+            },
+            "url": "{{baseUrl}}/v1/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = pm.response.json();",
+                  "const token = j?.tokens?.accessToken;",
+                  "const userId = j?.data?.user_id || j?.data?.id || j?.user_id || j?.id;",
+                  "pm.collectionVariables.set('replayToken', token || '');",
+                  "pm.collectionVariables.set('replayUserId', userId || '');",
+                  "pm.test('Replay user login returns token', function () { pm.expect(token).to.be.ok; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 35",
+      "item": [
+        {
+          "name": "35 Concurrent Booking Manual Runner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/bookings",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pickup\":{\"lat\":10.7605,\"lng\":106.6605},\"drop\":{\"lat\":10.7705,\"lng\":106.7005},\"vehicleType\":\"CAR\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status 200 or 201 or 409', function () { pm.expect([200,201,409]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 47",
+      "item": [
+        {
+          "name": "47 Forecast Latency Sample",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{aiUrl}}/v1/ai/forecast-demand",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"zone_id\":\"HCM_Q1\",\"horizon_min\":30,\"timestamp\":\"{{$isoTimestamp}}\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No 5xx backend collapse', function () { pm.expect(pm.response.code).to.not.be.within(500, 599); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 59",
+      "item": [
+        {
+          "name": "59 Parallel Requests Runner Sample",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{aiUrl}}/v1/ai/agent/select-driver",
+            "description": "Run with Collection Runner iterations/concurrency for an approximate Postman version. Shell script is authoritative.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pickup\":{\"lat\":10.76,\"lng\":106.66},\"drop\":{\"lat\":10.77,\"lng\":106.70},\"vehicle_type\":\"CAR\",\"context\":{\"objective\":\"balanced_eta_price\",\"max_eta_min\":15,\"budget_weight\":0.7,\"latency_budget_ms\":200},\"candidates\":[{\"driver_id\":\"d54_1\",\"distance_m\":220,\"rating\":4.5,\"online\":true},{\"driver_id\":\"d54_2\",\"distance_m\":420,\"rating\":4.9,\"online\":true}]}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status 200', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 61",
+      "description": "Nhiều user đặt xe cùng lúc (1000 req/s trong 20s): Postman dùng kiểm tra route + payload, load chính chạy bằng tool.",
+      "item": [
+        {
+          "name": "61 Smoke Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/bookings",
+            "description": "Case 61 chạy load bằng tool (k6/JMeter). Request này dùng để xác thực nhanh payload/route trong Postman trước khi chạy load.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pickup\":{\"lat\":10.762622,\"lng\":106.660172},\"drop\":{\"lat\":10.780403,\"lng\":106.700928},\"vehicleType\":\"CAR\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status thuộc nhóm chấp nhận của Case 61', function () { pm.expect([200,201,400,401,403,422,429]).to.include(pm.response.code); });",
+                  "pm.test('Không trả lỗi 5xx', function () { pm.expect(pm.response.code).to.not.be.within(500, 599); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 62",
+      "description": "ETA under load (500 req/s): Postman smoke, tool load để đo SLA latency.",
+      "item": [
+        {
+          "name": "62 Smoke Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/eta/estimate",
+            "description": "Case 62 chạy load bằng tool (k6/JMeter). Request này dùng để xác thực nhanh payload/route trong Postman trước khi chạy load.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"distance_km\":4.7,\"traffic_level\":0.6}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status thuộc nhóm chấp nhận của Case 62', function () { pm.expect([200,400,401,403,422,429]).to.include(pm.response.code); });",
+                  "pm.test('Không trả lỗi 5xx', function () { pm.expect(pm.response.code).to.not.be.within(500, 599); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 63",
+      "description": "Pricing spike: Postman smoke, tool load để kiểm tra surge/latency khi spike traffic.",
+      "item": [
+        {
+          "name": "63 Smoke Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/pricing/estimate",
+            "description": "Case 63 chạy load bằng tool (k6/JMeter). Request này dùng để xác thực nhanh payload/route trong Postman trước khi chạy load.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"distance_km\":5,\"demand_index\":2,\"supply_index\":1}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status thuộc nhóm chấp nhận của Case 63', function () { pm.expect([200,400,401,403,422,429]).to.include(pm.response.code); });",
+                  "pm.test('Không trả lỗi 5xx', function () { pm.expect(pm.response.code).to.not.be.within(500, 599); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 67",
+      "item": [
+        {
+          "name": "67 Gateway Rate Limit Login Sample",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/auth/login",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identifier\":\"rate-limit-user@test.com\",\"password\":\"wrong-pass\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No 5xx backend collapse', function () { pm.expect(pm.response.code).to.not.be.within(500, 599); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 68",
+      "description": "Latency under spike: Postman kiểm tra endpoint/payload, tool load để đo p95/p99.",
+      "item": [
+        {
+          "name": "68 Smoke Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/eta/estimate",
+            "description": "Case 68 chạy load bằng tool (k6/JMeter). Request này dùng để xác thực nhanh payload/route trong Postman trước khi chạy load.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"distance_km\":6,\"traffic_level\":0.7}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status thuộc nhóm chấp nhận của Case 68', function () { pm.expect([200,400,401,403,422,429]).to.include(pm.response.code); });",
+                  "pm.test('Không trả lỗi 5xx', function () { pm.expect(pm.response.code).to.not.be.within(500, 599); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 69",
+      "description": "Giờ cao điểm (ramp load tăng dần): Postman smoke, tool load để đánh giá degrade/scale.",
+      "item": [
+        {
+          "name": "69 Smoke Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/bookings",
+            "description": "Case 69 chạy load bằng tool (k6/JMeter). Request này dùng để xác thực nhanh payload/route trong Postman trước khi chạy load.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pickup\":{\"lat\":10.762622,\"lng\":106.660172},\"drop\":{\"lat\":10.780403,\"lng\":106.700928},\"vehicleType\":\"CAR\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status thuộc nhóm chấp nhận của Case 69', function () { pm.expect([200,201,400,401,403,422,429]).to.include(pm.response.code); });",
+                  "pm.test('Không trả lỗi 5xx', function () { pm.expect(pm.response.code).to.not.be.within(500, 599); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 77",
+      "item": [
+        {
+          "name": "77 Exponential Backoff Policy Note",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "Case 77 in script validates computed backoff policy locally; Postman only checks service health."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Expected status 200', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 85",
+      "item": [
+        {
+          "name": "85 Booking Spam Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-load-test",
+                "value": "security-rate-limit"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "c85-{{$timestamp}}-{{$randomInt}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"pickup\":{\"lat\":10.7601,\"lng\":106.6601},\"drop\":{\"lat\":10.7701,\"lng\":106.7001},\"vehicle_type\":\"CAR\",\"distance_km\":5,\"traffic_level\":0.5}"
+            },
+            "url": "{{baseUrl}}/v1/bookings"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Request does not collapse backend', function () {",
+                  "  pm.expect(pm.response.code).to.not.be.within(500, 599);",
+                  "});",
+                  "pm.test('Rate limit is acceptable if 429 appears during runner burst', function () {",
+                  "  pm.expect([200, 201, 400, 422, 429]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 87 (Manual Evidence)",
+      "item": [
+        {
+          "name": "87 Payment Listing (masking hint only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/payments?limit=10",
+            "description": "Postman only triggers API read. You must verify encryption-at-rest in DB/KMS and ensure sensitive fields are not plaintext in storage."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No 5xx', () => pm.expect(pm.response.code).to.not.be.within(500,599));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Case 98",
+      "item": [
+        {
+          "name": "98 Auth Login Rate Limit Sample",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/auth/login",
+            "description": "Run in Collection Runner for a rough 429 check; shell script is authoritative.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identifier\":\"rate-limit-user@test.com\",\"password\":\"wrong-pass\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No 5xx backend collapse', function () { pm.expect(pm.response.code).to.not.be.within(500, 599); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

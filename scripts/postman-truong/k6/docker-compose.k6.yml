@@ -1,0 +1,13 @@
+services:
+  k6:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      BOOKING_URL: ${BOOKING_URL:-http://host.docker.internal:3003}
+      PRICING_URL: ${PRICING_URL:-http://host.docker.internal:3006}
+      USER_TOKEN: ${USER_TOKEN:-}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+    command: run /work/case61-63-load.js

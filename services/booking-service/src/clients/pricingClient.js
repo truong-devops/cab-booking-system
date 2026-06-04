@@ -46,7 +46,7 @@ function isRetryableError(err) {
     return false;
   }
   const code = String(err.code || '').toUpperCase();
-  if (['ECONNABORTED', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN'].includes(code)) {
+  if (['ECONNABORTED', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN', 'ENOTFOUND'].includes(code)) {
     return true;
   }
   const status = Number(err.response?.status);

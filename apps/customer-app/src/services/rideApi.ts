@@ -14,6 +14,8 @@ export type Ride = {
   dropoffLat?: number | null;
   dropoffLng?: number | null;
   dropoffLabel?: string | null;
+  quoteFareAmount?: number | null;
+  quoteCurrency?: string | null;
   status: string;
   statusUpdatedAt?: string;
   createdAt?: string;
@@ -34,7 +36,34 @@ type CreateRidePayload = {
   dropoffLat?: number;
   dropoffLng?: number;
   dropoffLabel?: string;
+  quoteFareAmount?: number;
+  quoteCurrency?: string;
   status?: string;
+};
+
+export type RideSummary = {
+  rideId: string;
+  status: string;
+  distanceMeters?: number | null;
+  durationSeconds?: number | null;
+  fare?: {
+    amount?: number | null;
+    currency?: string | null;
+    paymentStatus?: string | null;
+    paymentId?: string | null;
+    method?: string | null;
+    source?: string | null;
+  };
+  breakdown?: {
+    baseFare?: number;
+    distanceFee?: number;
+    timeFee?: number;
+    surgeFee?: number;
+    discount?: number;
+    subtotal?: number;
+    total?: number;
+    currency?: string;
+  };
 };
 
 export async function createRide(payload: CreateRidePayload) {
@@ -72,6 +101,13 @@ export async function getRide(id: string) {
   return apiRequest<{ data: Ride }>({
     method: 'GET',
     path: endpoints.ride.detail(id)
+  });
+}
+
+export async function getRideSummary(id: string) {
+  return apiRequest<{ data: RideSummary }>({
+    method: 'GET',
+    path: endpoints.ride.summary(id)
   });
 }
 

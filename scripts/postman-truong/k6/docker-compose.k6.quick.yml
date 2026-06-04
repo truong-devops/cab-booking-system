@@ -1,0 +1,196 @@
+services:
+  k6-case35:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      USER_TOKEN: ${USER_TOKEN:-}
+      CASE35_VUS: ${CASE35_VUS:-1}
+      CASE35_ITERATIONS: ${CASE35_ITERATIONS:-1}
+      CASE35_MAX_DURATION: ${CASE35_MAX_DURATION:-10s}
+      CASE35_TIMEOUT: ${CASE35_TIMEOUT:-3s}
+    command: run /work/case35-parallel-booking.js
+
+  k6-case47:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      AI_URL: ${AI_URL:-http://host.docker.internal:3013}
+      USER_TOKEN: ${USER_TOKEN:-}
+      CASE47_RATE: ${CASE47_RATE:-1000}
+      CASE47_DURATION: ${CASE47_DURATION:-30s}
+      CASE47_PRE_VUS: ${CASE47_PRE_VUS:-200}
+      CASE47_MAX_VUS: ${CASE47_MAX_VUS:-1200}
+      CASE47_TIMEOUT: ${CASE47_TIMEOUT:-3s}
+    command: run /work/case47-ai-latency.js
+
+  k6-case59:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      AI_URL: ${AI_URL:-http://host.docker.internal:3013}
+      CASE59_RATE: ${CASE59_RATE:-200}
+      CASE59_DURATION: ${CASE59_DURATION:-20s}
+      CASE59_VUS: ${CASE59_VUS:-80}
+      CASE59_MAX_VUS: ${CASE59_MAX_VUS:-400}
+      CASE59_TIMEOUT: ${CASE59_TIMEOUT:-3s}
+    command: run /work/case59-parallel-agent.js
+
+  k6-case61:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      USER_TOKEN: ${USER_TOKEN:-}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+      CASE61_RATE: ${CASE61_RATE:-1000}
+      CASE61_DURATION: ${CASE61_DURATION:-20s}
+      CASE61_VUS: ${CASE61_VUS:-300}
+      CASE61_MAX_VUS: ${CASE61_MAX_VUS:-1200}
+      CASE61_TIMEOUT: ${CASE61_TIMEOUT:-3s}
+      CASE61_TOKEN_COUNT: ${CASE61_TOKEN_COUNT:-0}
+      CASE61_TOKENS_FILE: ${CASE61_TOKENS_FILE:-}
+      AUTO_AUTH_FIXED_POOL: ${AUTO_AUTH_FIXED_POOL:-false}
+      AUTO_AUTH_USER_PREFIX: ${AUTO_AUTH_USER_PREFIX:-case61_k6_user}
+    command: run /work/case61-booking-1000rps.js
+
+  k6-case62:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      USER_TOKEN: ${USER_TOKEN:-}
+      CASE62_RATE: ${CASE62_RATE:-500}
+      CASE62_DURATION: ${CASE62_DURATION:-20s}
+      CASE62_VUS: ${CASE62_VUS:-140}
+      CASE62_MAX_VUS: ${CASE62_MAX_VUS:-800}
+      CASE62_TIMEOUT: ${CASE62_TIMEOUT:-2s}
+    command: run /work/case62-eta-500rps.js
+
+  k6-case63:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      USER_TOKEN: ${USER_TOKEN:-}
+      CASE63_START_RATE: ${CASE63_START_RATE:-100}
+      CASE63_SPIKE_RATE: ${CASE63_SPIKE_RATE:-1000}
+      CASE63_WARMUP: ${CASE63_WARMUP:-5s}
+      CASE63_HOLD: ${CASE63_HOLD:-20s}
+      CASE63_COOLDOWN: ${CASE63_COOLDOWN:-5s}
+      CASE63_VUS: ${CASE63_VUS:-300}
+      CASE63_MAX_VUS: ${CASE63_MAX_VUS:-1600}
+      CASE63_TIMEOUT: ${CASE63_TIMEOUT:-3s}
+    command: run /work/case63-pricing-spike.js
+
+  k6-case67:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      USER_TOKEN: ${USER_TOKEN:-}
+      CASE67_RATE: ${CASE67_RATE:-1000}
+      CASE67_DURATION: ${CASE67_DURATION:-20s}
+      CASE67_VUS: ${CASE67_VUS:-300}
+      CASE67_MAX_VUS: ${CASE67_MAX_VUS:-1200}
+      CASE67_TIMEOUT: ${CASE67_TIMEOUT:-3s}
+    command: run /work/case67-rate-limit-gateway.js
+
+  k6-case68:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      USER_TOKEN: ${USER_TOKEN:-}
+      CASE68_START_RATE: ${CASE68_START_RATE:-200}
+      CASE68_BASELINE_RATE: ${CASE68_BASELINE_RATE:-300}
+      CASE68_SPIKE_RATE: ${CASE68_SPIKE_RATE:-1000}
+      CASE68_RECOVERY_RATE: ${CASE68_RECOVERY_RATE:-300}
+      CASE68_BASELINE_DURATION: ${CASE68_BASELINE_DURATION:-5s}
+      CASE68_SPIKE_UP_DURATION: ${CASE68_SPIKE_UP_DURATION:-2s}
+      CASE68_SPIKE_HOLD_DURATION: ${CASE68_SPIKE_HOLD_DURATION:-8s}
+      CASE68_RECOVERY_DURATION: ${CASE68_RECOVERY_DURATION:-5s}
+      CASE68_VUS: ${CASE68_VUS:-250}
+      CASE68_MAX_VUS: ${CASE68_MAX_VUS:-1200}
+      CASE68_TIMEOUT: ${CASE68_TIMEOUT:-3s}
+      CASE68_SLA_P95_MS: ${CASE68_SLA_P95_MS:-200}
+      CASE68_SLA_P99_MS: ${CASE68_SLA_P99_MS:-300}
+    command: run /work/case68-latency-under-spike.js
+
+  k6-case69:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      USER_TOKEN: ${USER_TOKEN:-}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+      CASE69_START_RATE: ${CASE69_START_RATE:-100}
+      CASE69_STAGE1: ${CASE69_STAGE1:-250}
+      CASE69_STAGE2: ${CASE69_STAGE2:-500}
+      CASE69_STAGE3: ${CASE69_STAGE3:-800}
+      CASE69_STAGE4: ${CASE69_STAGE4:-1000}
+      CASE69_STAGE1_DURATION: ${CASE69_STAGE1_DURATION:-5s}
+      CASE69_STAGE2_DURATION: ${CASE69_STAGE2_DURATION:-5s}
+      CASE69_STAGE3_DURATION: ${CASE69_STAGE3_DURATION:-5s}
+      CASE69_STAGE4_DURATION: ${CASE69_STAGE4_DURATION:-5s}
+      CASE69_VUS: ${CASE69_VUS:-300}
+      CASE69_MAX_VUS: ${CASE69_MAX_VUS:-1200}
+      CASE69_TIMEOUT: ${CASE69_TIMEOUT:-3s}
+      CASE69_TOKEN_COUNT: ${CASE69_TOKEN_COUNT:-600}
+      CASE69_TOKENS_FILE: ${CASE69_TOKENS_FILE:-/work/.cache/case69-k6-user-tokens.json}
+      AUTO_AUTH_USER_PREFIX: ${AUTO_AUTH_USER_PREFIX:-case69_k6_user}
+    command: run /work/case69-peak-ramp-booking.js
+
+  k6-case85:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      USER_TOKEN: ${USER_TOKEN:-}
+      CASE85_RATE: ${CASE85_RATE:-1200}
+      CASE85_DURATION: ${CASE85_DURATION:-20s}
+      CASE85_VUS: ${CASE85_VUS:-350}
+      CASE85_MAX_VUS: ${CASE85_MAX_VUS:-1400}
+      CASE85_HEALTH_RATE: ${CASE85_HEALTH_RATE:-5}
+      CASE85_HEALTH_VUS: ${CASE85_HEALTH_VUS:-5}
+      CASE85_HEALTH_MAX_VUS: ${CASE85_HEALTH_MAX_VUS:-20}
+      CASE85_TIMEOUT: ${CASE85_TIMEOUT:-3s}
+    command: run /work/case85-rate-limit-attack.js
+
+  k6-case98:
+    image: grafana/k6:latest
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      BASE_URL: ${BASE_URL:-http://host.docker.internal:3000}
+      USER_TOKEN: ${USER_TOKEN:-}
+      CASE98_RATE: ${CASE98_RATE:-150}
+      CASE98_DURATION: ${CASE98_DURATION:-20s}
+      CASE98_VUS: ${CASE98_VUS:-80}
+      CASE98_MAX_VUS: ${CASE98_MAX_VUS:-400}
+      CASE98_HEALTH_RATE: ${CASE98_HEALTH_RATE:-3}
+      CASE98_HEALTH_VUS: ${CASE98_HEALTH_VUS:-3}
+      CASE98_HEALTH_MAX_VUS: ${CASE98_HEALTH_MAX_VUS:-20}
+      CASE98_TIMEOUT: ${CASE98_TIMEOUT:-3s}
+    command: run /work/case98-rate-limit-abuse.js

@@ -38,12 +38,13 @@ services:
   api-gateway:
     build:
       context: ..
-      dockerfile: services/api-gateway/Dockerfile
+      dockerfile: services/gateway/Dockerfile
     ports:
       - '3000:3000'
       - '3443:3443'
     environment:
-      SERVICE_NAME: api-gateway
+      SERVICE_NAME: api-gateway-go
+      PORT: 3000
       OTEL_SERVICE_NAME: api-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       JWT_SECRET: ${JWT_SECRET:-dev-secret}
@@ -60,15 +61,22 @@ services:
       RIDE_SERVICE_URL: http://ride-service:3005
       REVIEW_SERVICE_URL: http://review-service:3009
       USER_SERVICE_URL: http://user-service:4004
-      PROXY_TIMEOUT_MS: 30000
-      PROXY_TIMEOUT_MS_PRICING: 1200
+      PROXY_TIMEOUT_MS: ${PROXY_TIMEOUT_MS:-8000}
+      PROXY_TIMEOUT_MS_PRICING: ${PROXY_TIMEOUT_MS_PRICING:-8000}
       PROXY_RETRY_BACKOFF_MS: 100
+      PROXY_KEEPALIVE_MAX_SOCKETS: ${PROXY_KEEPALIVE_MAX_SOCKETS:-4096}
+      AUTH_VERIFY_ENABLED: ${AUTH_VERIFY_ENABLED:-false}
+      AUTH_VERIFY_SKIP_PREFIXES: ${AUTH_VERIFY_SKIP_PREFIXES:-/v1/payments,/v1/pricing}
+      AUTH_LOCAL_JWT_CACHE_TTL_MS: ${AUTH_LOCAL_JWT_CACHE_TTL_MS:-60000}
+      AUTH_VERIFY_CACHE_TTL_MS: ${AUTH_VERIFY_CACHE_TTL_MS:-60000}
       PROXY_CIRCUIT_BREAKER_FAILURE_THRESHOLD: 6
       PROXY_CIRCUIT_BREAKER_OPEN_MS: 4000
       PROXY_CIRCUIT_BREAKER_FAILURE_THRESHOLD_PRICING: 2
       PROXY_CIRCUIT_BREAKER_OPEN_MS_PRICING: 6000
       PROXY_CIRCUIT_BREAKER_FAILURE_THRESHOLD_BOOKINGS: 20
       PROXY_CIRCUIT_BREAKER_OPEN_MS_BOOKINGS: 1500
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-120000}
+      BOOKING_CREATE_RATE_LIMIT_MAX: ${BOOKING_CREATE_RATE_LIMIT_MAX:-120000}
       GATEWAY_HTTPS_ENABLED: ${GATEWAY_HTTPS_ENABLED:-true}
       HTTPS_PORT: ${HTTPS_PORT:-3443}
       HTTPS_CERT_PATH: ${HTTPS_CERT_PATH:-/app/src/certs/dev-gateway.crt}
@@ -226,6 +234,14 @@ services:
       OUTBOX_PROCESSING_TIMEOUT_MS: 300000
       ETA_BASE_URL: http://eta-service:3012
       PRICING_BASE_URL: http://pricing-service:3006
+      PRICING_HTTP_TIMEOUT_MS: ${PRICING_HTTP_TIMEOUT_MS:-1800}
+      PRICING_HTTP_RETRY_MAX: ${PRICING_HTTP_RETRY_MAX:-2}
+      PRICING_HTTP_RETRY_BACKOFF_MS: ${PRICING_HTTP_RETRY_BACKOFF_MS:-120}
+      PRICING_HTTP_RETRY_MAX_BACKOFF_MS: ${PRICING_HTTP_RETRY_MAX_BACKOFF_MS:-1500}
+      PRICING_CIRCUIT_BREAKER_ENABLED: ${PRICING_CIRCUIT_BREAKER_ENABLED:-true}
+      ENABLE_PRICING_FALLBACK_MOCK: ${ENABLE_PRICING_FALLBACK_MOCK:-}
+      BOOKING_FORCE_REMOTE_ESTIMATES: ${BOOKING_FORCE_REMOTE_ESTIMATES:-false}
+      BOOKING_FORCE_LOCAL_ESTIMATES: ${BOOKING_FORCE_LOCAL_ESTIMATES:-false}
       AI_BASE_URL: http://ai-service:3013
       PAYMENT_BASE_URL: ${PAYMENT_BASE_URL:-http://payment-service:3007}
       PAYMENT_FALLBACK_BASE_URLS: ${PAYMENT_FALLBACK_BASE_URLS:-}
@@ -486,6 +502,35 @@ services:
     volumes:
       - cab_mongo_data:/data/db
       - ./mongo/init:/docker-entrypoint-initdb.d
+    networks:
+      - backend
+
+  # =========================
+  # Dev Tools: Kafka/Redis UI
+  # =========================
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    ports:
+      - '8085:8080'
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    depends_on:
+      - kafka
+      - zookeeper
+    networks:
+      - backend
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - '8081:8081'
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
     networks:
       - backend
 

@@ -15,6 +15,7 @@ import { useScreenMetrics } from '../../hooks/useScreenMetrics';
 import { useAppPalette } from '../../theme/palette';
 import { StateView } from '../../components/common/StateView';
 import { SkeletonBlock } from '../../components/common/SkeletonBlock';
+import * as rideApi from '../../services/rideApi';
 
 type PaymentCode = 'CASH' | 'CARD' | 'WALLET' | 'VIETQR';
 
@@ -43,6 +44,9 @@ const PaymentScreen = () => {
   const [loading, setLoading] = useState(false);
   const [methodsLoading, setMethodsLoading] = useState(true);
   const [methodsError, setMethodsError] = useState<string | null>(null);
+  const [rideSummary, setRideSummary] = useState<rideApi.RideSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const loadMethods = useCallback(async () => {
     setMethodsLoading(true);
@@ -75,8 +79,48 @@ const PaymentScreen = () => {
   useFocusEffect(
     useCallback(() => {
       void loadMethods();
-    }, [loadMethods])
+
+      if (!activeRide?.id) return;
+      let mounted = true;
+
+      const loadSummary = async () => {
+        setSummaryLoading(true);
+        setSummaryError(null);
+
+        try {
+          const response = await rideApi.getRideSummary(activeRide.id);
+          if (!mounted) return;
+          setRideSummary(response.data);
+        } catch (err: any) {
+          if (!mounted) return;
+          if (err?.status === 409) {
+            setSummaryError('Đang cập nhật tổng cước chuyến...');
+          } else {
+            setSummaryError('Không tải được tổng cước chính xác.');
+          }
+        } finally {
+          if (mounted) {
+            setSummaryLoading(false);
+          }
+        }
+      };
+
+      void loadSummary();
+
+      return () => {
+        mounted = false;
+      };
+    }, [activeRide?.id, loadMethods])
   );
+
+  const summaryAmount = useMemo(() => {
+    const amount = rideSummary?.fare?.amount ?? rideSummary?.breakdown?.total;
+    if (!Number.isFinite(amount)) return null;
+    const rounded = Math.round(amount);
+    return rounded > 0 ? rounded : null;
+  }, [rideSummary]);
+
+  const displayedAmount = useMemo(() => summaryAmount ?? activeRide?.option.price ?? 0, [activeRide?.option.price, summaryAmount]);
 
   const selectedMethod = useMemo(() => methods.find((item) => item.id === selectedMethodId) || methods[0], [methods, selectedMethodId]);
 
@@ -87,7 +131,7 @@ const PaymentScreen = () => {
     }
     try {
       setLoading(true);
-      await completeRidePayment(selectedMethod.code);
+      await completeRidePayment(selectedMethod.code, displayedAmount);
       navigation.replace('Rating');
     } catch (err: any) {
       push(err?.message || 'Thanh toán thất bại', 'danger');
@@ -103,7 +147,12 @@ const PaymentScreen = () => {
 
         <Card>
           <Text style={[styles.label, { color: palette.muted }]}>Tổng cước phí</Text>
-          <Text style={styles.amount}>{formatVnd(activeRide?.option.price || 0)}</Text>
+          <Text style={styles.amount}>{formatVnd(displayedAmount)}</Text>
+          {summaryLoading ? (
+            <Text style={[styles.note, { color: palette.muted }]}>Đang kiểm tra tổng cước chuyến...</Text>
+          ) : summaryError ? (
+            <Text style={[styles.note, { color: colors.red }]}>{summaryError}</Text>
+          ) : null}
         </Card>
 
         <Card style={styles.methodCard}>
@@ -141,7 +190,8 @@ const styles = StyleSheet.create({
   label: { ...typography.body },
   amount: { ...typography.title, color: colors.brand700 },
   methodCard: { gap: spacing.sm },
-  skeletonList: { gap: spacing.sm }
+  skeletonList: { gap: spacing.sm },
+  note: { ...typography.body, marginTop: spacing.xs }
 });
 
 export default PaymentScreen;

@@ -206,6 +206,8 @@ router.post(
         pickupLabel: { type: 'string' },
         dropoffLabel: { type: 'string' },
         bookingId: { type: 'string' },
+        quoteFareAmount: { type: 'number' },
+        quoteCurrency: { type: 'string' },
         driverId: { type: 'string' },
         status: { type: 'string' }
       }
@@ -323,8 +325,22 @@ router.post(
       if (requestedExternalRideId) {
         const existingRide = await getRideByExternalId(requestedExternalRideId);
         if (existingRide) {
+          const quoteBackfill = {};
+          if (Number.isFinite(Number(req.body.quoteFareAmount)) && Number(req.body.quoteFareAmount) > 0) {
+            quoteBackfill.quoteFareAmount = req.body.quoteFareAmount;
+          }
+          if (typeof req.body.quoteCurrency === 'string' && req.body.quoteCurrency.trim()) {
+            quoteBackfill.quoteCurrency = req.body.quoteCurrency;
+          }
+          if (req.body.bookingId && !existingRide.booking_id) {
+            quoteBackfill.bookingId = req.body.bookingId;
+          }
+
+          const rideForResponse =
+            Object.keys(quoteBackfill).length > 0 ? (await updateRideFields(existingRide.id, quoteBackfill)) || existingRide : existingRide;
+
           responseStatus = 200;
-          responseBody = { data: toRideResponse(existingRide) };
+          responseBody = { data: toRideResponse(rideForResponse) };
 
           const responseHeaders = {
             'content-type': 'application/json',
@@ -365,6 +381,8 @@ router.post(
         dropoffLat: req.body.dropoffLat,
         dropoffLng: req.body.dropoffLng,
         dropoffLabel: req.body.dropoffLabel || null,
+        quoteFareAmount: req.body.quoteFareAmount,
+        quoteCurrency: req.body.quoteCurrency,
         status: shouldAutoAssign ? 'assigned' : req.body.status || 'requested',
         traceId: req.traceId
       });
@@ -511,16 +529,29 @@ router.get(
       requestId: req.requestId || null
     });
     const latestPayment = payments[0] || null;
-    const paidPayment = payments.find((item) => normalizeStatus(item.status) === 'PAID') || null;
-    const farePayment =
+    const paidAmountPayment =
       payments.find((item) => normalizeStatus(item.status) === 'PAID' && toRoundedPositiveAmount(item.amount) !== null) ||
-      payments.find((item) => toRoundedPositiveAmount(item.amount) !== null) ||
       null;
-    const paymentFareAmount = toRoundedPositiveAmount(farePayment?.amount);
+    const firstValidPayment = payments.find((item) => toRoundedPositiveAmount(item.amount) !== null) || null;
+    const paymentFareAmount = toRoundedPositiveAmount(paidAmountPayment?.amount);
     const quotedFareAmount = toRoundedPositiveAmount(ride.quote_fare_amount);
-    const effectiveFareAmount = paymentFareAmount !== null ? paymentFareAmount : quotedFareAmount;
+    const amountSourcePayment = paidAmountPayment || (quotedFareAmount === null ? firstValidPayment : null);
+    const fallbackFareAmount = toRoundedPositiveAmount(amountSourcePayment?.amount);
+    const effectiveFareAmount =
+      paymentFareAmount !== null
+        ? paymentFareAmount
+        : quotedFareAmount !== null
+        ? quotedFareAmount
+        : fallbackFareAmount;
     const breakdown = computeBreakdown({ fareAmount: effectiveFareAmount, distanceMeters, durationSeconds });
-    const fareSource = paymentFareAmount !== null ? 'payment-service' : quotedFareAmount !== null ? 'booking-quote' : 'estimated';
+    const fareSource =
+      paymentFareAmount !== null
+        ? 'payment-service'
+        : quotedFareAmount !== null
+        ? 'booking-quote'
+        : fallbackFareAmount !== null
+        ? 'payment-service'
+        : 'estimated';
 
     return res.json({
       data: {
@@ -530,10 +561,10 @@ router.get(
         durationSeconds,
         fare: {
           amount: effectiveFareAmount !== null ? effectiveFareAmount : breakdown.total,
-          currency: farePayment?.currency || ride.quote_currency || latestPayment?.currency || 'VND',
-          paymentStatus: paidPayment?.status || latestPayment?.status || null,
-          paymentId: paidPayment?.id || latestPayment?.id || null,
-          method: paidPayment?.method || latestPayment?.method || null,
+          currency: amountSourcePayment?.currency || ride.quote_currency || latestPayment?.currency || 'VND',
+          paymentStatus: amountSourcePayment?.status || latestPayment?.status || null,
+          paymentId: amountSourcePayment?.id || latestPayment?.id || null,
+          method: amountSourcePayment?.method || latestPayment?.method || null,
           source: fareSource
         },
         breakdown

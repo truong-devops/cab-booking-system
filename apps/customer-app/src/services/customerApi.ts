@@ -14,6 +14,8 @@ type StartRidePayload = {
   pickupLabel: string;
   destinationLabel: string;
   vehicleOptionId?: string;
+  quoteFareAmount?: number;
+  quoteCurrency?: string;
 };
 
 type LivePickup = {
@@ -212,6 +214,35 @@ function parseTimestamp(value: string | null | undefined) {
   return Number.isFinite(ts) ? ts : 0;
 }
 
+function getRidePaymentKeys(ride: rideApi.Ride) {
+  return Array.from(
+    new Set([ride.id, ride.externalRideId, ride.bookingId].map((value) => (typeof value === 'string' ? value.trim() : '')).filter(Boolean))
+  );
+}
+
+function getRoundedPositiveAmount(value: unknown) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  const rounded = Math.round(parsed);
+  return rounded > 0 ? rounded : null;
+}
+
+function getSummaryFareAmount(summary: rideApi.RideSummary | null | undefined) {
+  return getRoundedPositiveAmount(summary?.fare?.amount) ?? getRoundedPositiveAmount(summary?.breakdown?.total);
+}
+
+function getPaymentsForRide(ride: rideApi.Ride, paymentsByRideId: Record<string, paymentApi.Payment[]>) {
+  const seen = new Set<string>();
+  return getRidePaymentKeys(ride)
+    .flatMap((key) => paymentsByRideId[key] || [])
+    .filter((payment) => {
+      const dedupKey = payment.id || `${payment.rideId}:${payment.createdAt}:${payment.amount}`;
+      if (seen.has(dedupKey)) return false;
+      seen.add(dedupKey);
+      return true;
+    });
+}
+
 async function moveRideToStatus(rideId: string, status: string) {
   try {
     return await rideApi.updateRideStatus(rideId, status);
@@ -341,7 +372,7 @@ export const customerApi = {
     ];
   },
 
-  async startRide({ pickupLabel, destinationLabel, vehicleOptionId }: StartRidePayload) {
+  async startRide({ pickupLabel, destinationLabel, vehicleOptionId, quoteFareAmount, quoteCurrency }: StartRidePayload) {
     const pickup = getPickupPointOrThrow(pickupLabel);
     const destination = getDestinationPointOrThrow(destinationLabel);
     const bookingPayload = {
@@ -395,6 +426,8 @@ export const customerApi = {
       dropoffLat: destination.lat,
       dropoffLng: destination.lng,
       dropoffLabel: destinationLabel,
+      quoteFareAmount,
+      quoteCurrency,
       status: 'requested'
     });
 
@@ -502,10 +535,14 @@ export const customerApi = {
     ]);
 
     const paymentsByRideId = (paymentsResult.data || []).reduce<Record<string, paymentApi.Payment[]>>((acc, payment) => {
-      if (!acc[payment.rideId]) {
-        acc[payment.rideId] = [];
+      const key = String(payment.rideId || '').trim();
+      if (!key) {
+        return acc;
       }
-      acc[payment.rideId].push(payment);
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(payment);
       return acc;
     }, {});
     const reviewsByRideId = (reviewsResult.data || []).reduce<Record<string, reviewApi.Review>>((acc, review) => {
@@ -522,6 +559,24 @@ export const customerApi = {
       const status = String(ride.status || '').toLowerCase();
       return status === 'completed' || status === 'cancelled';
     });
+
+    const summaryEntries = await Promise.all(
+      filtered.map(async (ride) => {
+        if (String(ride.status || '').toLowerCase() !== 'completed') {
+          return [ride.id, null] as const;
+        }
+        try {
+          const summary = await rideApi.getRideSummary(ride.id);
+          return [ride.id, summary.data] as const;
+        } catch {
+          return [ride.id, null] as const;
+        }
+      })
+    );
+    const summaryByRideId = summaryEntries.reduce<Record<string, rideApi.RideSummary | null>>((acc, [rideId, summary]) => {
+      acc[rideId] = summary;
+      return acc;
+    }, {});
 
     const uniqueDriverIds = Array.from(new Set(filtered.map((ride) => String(ride.driverId || '').trim()).filter(Boolean)));
     const driverProfiles = await Promise.all(
@@ -545,14 +600,18 @@ export const customerApi = {
     const driverProfileById = Object.fromEntries(driverProfiles);
 
     return filtered.map((ride) => {
-      const ridePayments = paymentsByRideId[ride.id] || [];
+      const ridePayments = getPaymentsForRide(ride, paymentsByRideId);
       const rideReview = reviewsByRideId[ride.id] || null;
-      const amount = Math.round(
+      const paymentTotal = Math.round(
         ridePayments.reduce((sum, payment) => {
           const value = Number(payment.amount || 0);
           return sum + (Number.isFinite(value) ? value : 0);
         }, 0)
       );
+      const summary = summaryByRideId[ride.id] || null;
+      const summaryAmount = getSummaryFareAmount(summary);
+      const quoteAmount = getRoundedPositiveAmount(ride.quoteFareAmount);
+      const amount = summaryAmount ?? (paymentTotal || quoteAmount || 0);
 
       const latestPayment = [...ridePayments].sort((a, b) => parseTimestamp(b.createdAt) - parseTimestamp(a.createdAt))[0] || null;
       const normalizedDriverId = String(ride.driverId || '').trim() || null;
@@ -578,8 +637,8 @@ export const customerApi = {
         dropoffLng: ride.dropoffLng ?? null,
         paymentId: latestPayment?.id || null,
         paymentMethod: latestPayment?.method || null,
-        paymentStatus: latestPayment?.status || null,
-        paymentCurrency: latestPayment?.currency || null,
+        paymentStatus: summary?.fare?.paymentStatus || latestPayment?.status || null,
+        paymentCurrency: summary?.fare?.currency || latestPayment?.currency || ride.quoteCurrency || null,
         paymentAmount: latestPayment ? Number(latestPayment.amount || 0) : null,
         paymentCreatedAt: latestPayment?.createdAt || null,
         paymentUpdatedAt: latestPayment?.updatedAt || null,
@@ -599,6 +658,5 @@ export const customerApi = {
     });
   }
 };
-
 
 

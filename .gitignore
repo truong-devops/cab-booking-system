@@ -33,3 +33,6 @@ logs
 
 # tmp
 tmp
+scripts/evidence
+# k6 token cache
+scripts/postman-truong/k6/.cache/

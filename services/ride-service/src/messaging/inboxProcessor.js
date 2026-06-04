@@ -40,10 +40,10 @@ async function handleRideCreated(row) {
     if (typeof payload.dropoff?.address === 'string') {
       backfill.dropoffLabel = payload.dropoff.address;
     }
-    if (Number.isFinite(Number(payload.pricing?.estimatedFare))) {
+    if (existing.quote_fare_amount == null && Number.isFinite(Number(payload.pricing?.estimatedFare))) {
       backfill.quoteFareAmount = Math.round(Number(payload.pricing.estimatedFare));
     }
-    if (typeof payload.pricing?.currency === 'string' && payload.pricing.currency.trim()) {
+    if (!existing.quote_currency && typeof payload.pricing?.currency === 'string' && payload.pricing.currency.trim()) {
       backfill.quoteCurrency = payload.pricing.currency;
     }
 

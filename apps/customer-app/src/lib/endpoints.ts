@@ -16,7 +16,8 @@ export const endpoints = {
   ride: {
     list: '/v1/rides',
     detail: (id: string) => `/v1/rides/${id}`,
-    update: (id: string) => `/v1/rides/${id}`
+    update: (id: string) => `/v1/rides/${id}`,
+    summary: (id: string) => `/v1/rides/${id}/summary`
   },
   booking: {
     create: '/v1/bookings',
