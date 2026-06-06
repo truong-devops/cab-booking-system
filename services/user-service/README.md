@@ -31,7 +31,7 @@ psql "$DATABASE_URL" -f migrations/003_indexes.sql
 
 ```
 npm install
-DATABASE_URL=postgres://user:pass@localhost:5432/user_service_db \
+DATABASE_URL=postgres://user:pass@localhost:42130/user_service_db \
 INTERNAL_API_KEY=dev-internal-key \
 npm start
 ```

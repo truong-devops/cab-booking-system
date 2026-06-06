@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-http://localhost:42100}"
 UNIQ_TAG="$(date +%s)-$RANDOM"
 USER_EMAIL="${USER_EMAIL:-level3-${UNIQ_TAG}@test.com}"
 USER_PASS="${USER_PASS:-123456}"

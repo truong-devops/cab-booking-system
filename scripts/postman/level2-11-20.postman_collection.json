@@ -24,27 +24,27 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000"
+      "value": "http://localhost:42100"
     },
     {
       "key": "aiUrl",
-      "value": "http://localhost:3013"
+      "value": "http://localhost:42112"
     },
     {
       "key": "etaUrl",
-      "value": "http://localhost:3012"
+      "value": "http://localhost:42111"
     },
     {
       "key": "pricingUrl",
-      "value": "http://localhost:3006"
+      "value": "http://localhost:42106"
     },
     {
       "key": "bookingUrl",
-      "value": "http://localhost:3002"
+      "value": "http://localhost:42104"
     },
     {
       "key": "paymentUrl",
-      "value": "http://localhost:3005"
+      "value": "http://localhost:42107"
     },
     {
       "key": "internalApiKey",

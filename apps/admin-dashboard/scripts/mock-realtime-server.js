@@ -1,7 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { mockMonitoring } from '../src/services/mock.data.js';
 
-const PORT = Number(process.env.REALTIME_PORT || 7071);
+const PORT = Number(process.env.REALTIME_PORT || 42171);
 const TICK_MS = Number(process.env.REALTIME_TICK_MS || 1000);
 
 const BOUNDS = {

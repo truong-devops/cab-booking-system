@@ -5,9 +5,9 @@ info:
   description: |
     Ride service for ride lifecycle. All endpoints require JWT bearer auth.
 servers:
-  - url: http://localhost:3005
-    description: Direct ride-service
-  - url: http://localhost:3000
+  - url: http://localhost:42105
+    description: Direct debug-only ride-service
+  - url: http://localhost:42100
     description: API Gateway (prefix /v1/rides)
 components:
   securitySchemes:

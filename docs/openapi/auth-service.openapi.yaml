@@ -6,9 +6,9 @@ info:
     Auth service for user registration, login, token refresh, logout, and token verification.
     Base path on service: /auth. Gateway path: /v1/auth/* (mapped to /auth/*).
 servers:
-  - url: http://localhost:4001
-    description: Direct auth-service
-  - url: http://localhost:3000/v1/auth
+  - url: http://localhost:42102
+    description: Direct debug-only auth-service
+  - url: http://localhost:42100/v1/auth
     description: API Gateway (mapped to auth-service /auth)
 components:
   securitySchemes:

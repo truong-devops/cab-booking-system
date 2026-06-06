@@ -8,7 +8,7 @@ function toPositiveInt(raw, fallback) {
 
 const config = {
   port: toPositiveInt(process.env.PORT, 3014),
-  databaseUrl: process.env.DATABASE_URL || 'postgres://cab:cabpass@localhost:5432/places-service_db',
+  databaseUrl: process.env.DATABASE_URL || 'postgres://cab:cabpass@postgres:5432/places-service_db',
   placesProviderEnabled: String(process.env.PLACES_PROVIDER_ENABLED || 'true').toLowerCase() !== 'false',
   placesProviderBaseUrl: process.env.PLACES_PROVIDER_BASE_URL || 'https://nominatim.openstreetmap.org',
   placesProviderTimeoutMs: toPositiveInt(process.env.PLACES_PROVIDER_TIMEOUT_MS, 1800),

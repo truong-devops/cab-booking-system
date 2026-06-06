@@ -6,7 +6,7 @@ const monitoring = require('../monitoring');
 
 const kafka = new Kafka({
   clientId: 'ride-service',
-  brokers: [process.env.KAFKA_BROKERS || 'localhost:29092'],
+  brokers: [process.env.KAFKA_BROKERS || 'kafka:9092'],
   retry: {
     retries: Number(process.env.KAFKA_PRODUCER_RETRY_RETRIES || 8),
     initialRetryTime: Number(process.env.KAFKA_PRODUCER_RETRY_INITIAL_MS || 300),

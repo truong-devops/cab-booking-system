@@ -7,7 +7,7 @@ Contract: /contracts/openapi/driver-service.yaml
 
 - PORT (default: 3011)
 - DATABASE_URL (required)
-- REDIS_URL (default: redis://localhost:6379)
+- REDIS_URL (default: redis://redis:6379)
 - AUTH_JWT_SECRET or AUTH_PUBLIC_KEY (JWT verification)
 - LOCATION_TTL_SECONDS (default: 180)
 - ONLINE_TTL_SECONDS (default: 300)
@@ -18,11 +18,13 @@ Contract: /contracts/openapi/driver-service.yaml
 
 ## Run locally
 
+Use `http://localhost:42100` through the API Gateway for normal driver APIs. The direct `42110` port below is only for standalone local debugging.
+
 ```bash
 npm install
-PORT=3011 \
-DATABASE_URL=postgres://cab:cabpass@localhost:5432/driver-service_db \
-REDIS_URL=redis://localhost:6379 \
+PORT=42110 \
+DATABASE_URL=postgres://cab:cabpass@localhost:42130/driver-service_db \
+REDIS_URL=redis://localhost:42131 \
 AUTH_JWT_SECRET=dev-secret \
 npm start
 ```
@@ -63,7 +65,7 @@ psql "$DATABASE_URL" -f services/driver-service/migrations/003_indexes.sql
 ### Driver online
 
 ```bash
-curl -s -X POST http://localhost:3000/v1/driver/me/online \
+curl -s -X POST http://localhost:42100/v1/driver/me/online \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"deviceId":"d1"}'
@@ -72,7 +74,7 @@ curl -s -X POST http://localhost:3000/v1/driver/me/online \
 ### Update location
 
 ```bash
-curl -s -X POST http://localhost:3000/v1/driver/me/location \
+curl -s -X POST http://localhost:42100/v1/driver/me/location \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"lat":10.76,"lng":106.66}'
@@ -81,19 +83,19 @@ curl -s -X POST http://localhost:3000/v1/driver/me/location \
 ### Available drivers (internal)
 
 ```bash
-curl -s "http://localhost:3000/v1/internal/drivers/available?lat=10.76&lng=106.66&radiusMeters=3000&limit=10" \
+curl -s "http://localhost:42100/v1/internal/drivers/available?lat=10.76&lng=106.66&radiusMeters=3000&limit=10" \
   -H "Authorization: Bearer $SERVICE_TOKEN"
 ```
 
 ### Mark busy / available
 
 ```bash
-curl -s -X POST http://localhost:3000/v1/internal/drivers/{driverId}/mark-busy \
+curl -s -X POST http://localhost:42100/v1/internal/drivers/{driverId}/mark-busy \
   -H "Authorization: Bearer $SERVICE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"rideId":"ride_123"}'
 
-curl -s -X POST http://localhost:3000/v1/internal/drivers/{driverId}/mark-available \
+curl -s -X POST http://localhost:42100/v1/internal/drivers/{driverId}/mark-available \
   -H "Authorization: Bearer $SERVICE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"rideId":"ride_123"}'

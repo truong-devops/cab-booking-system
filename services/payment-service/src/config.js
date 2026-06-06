@@ -19,7 +19,7 @@ function parseNumber(value, fallback) {
 
 const config = {
   serviceName: process.env.SERVICE_NAME || 'payment-service',
-  port: Number(process.env.PORT || 3000),
+  port: Number(process.env.PORT || 3007),
   startup: {
     maxRetries: parseNumber(process.env.STARTUP_MAX_RETRIES, 0),
     retryInitialDelayMs: parseNumber(process.env.STARTUP_RETRY_INITIAL_DELAY_MS, 1000),
@@ -27,7 +27,7 @@ const config = {
   },
   db: {
     connectionString: process.env.DATABASE_URL || '',
-    host: process.env.PGHOST || 'localhost',
+    host: process.env.PGHOST || 'postgres',
     port: Number(process.env.PGPORT || 5432),
     user: process.env.PGUSER || 'postgres',
     password: process.env.PGPASSWORD || 'postgres',
@@ -36,7 +36,7 @@ const config = {
   },
   kafka: {
     clientId: process.env.KAFKA_CLIENT_ID || 'payment-service',
-    brokers: (process.env.KAFKA_BROKERS || 'localhost:29092')
+    brokers: (process.env.KAFKA_BROKERS || 'kafka:9092')
       .split(',')
       .map((value) => value.trim())
       .filter(Boolean),
@@ -88,8 +88,8 @@ const config = {
     timeoutMs: Number(process.env.PAYMENT_GATEWAY_TIMEOUT_MS || 8000)
   },
   services: {
-    ride: process.env.RIDE_SERVICE_URL || 'http://localhost:3005',
-    booking: process.env.BOOKING_SERVICE_URL || 'http://localhost:3003'
+    ride: process.env.RIDE_SERVICE_URL || 'http://ride-service:3005',
+    booking: process.env.BOOKING_SERVICE_URL || 'http://booking-service:3003'
   },
   saga: {
     bookingCompensationOnPaymentFailed: {
@@ -101,7 +101,7 @@ const config = {
     }
   },
   redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
+    url: process.env.REDIS_URL || 'redis://redis:6379'
   },
   idempotency: {
     ttlSeconds: Number(process.env.IDEMPOTENCY_TTL_SECONDS || 86400),

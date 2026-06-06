@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_BASE_URL="http://localhost:3000"
+DEFAULT_BASE_URL="http://localhost:42100"
 BASE_URL="${1:-${BASE_URL:-$DEFAULT_BASE_URL}}"
-BOOKING_URL="${BOOKING_URL:-http://localhost:3003}"
-ETA_URL="${ETA_URL:-http://localhost:3012}"
-PRICING_URL="${PRICING_URL:-http://localhost:3006}"
+BOOKING_URL="${BOOKING_URL:-http://localhost:42104}"
+ETA_URL="${ETA_URL:-http://localhost:42111}"
+PRICING_URL="${PRICING_URL:-http://localhost:42106}"
 INTERNAL_API_KEY="${INTERNAL_API_KEY:-dev-internal-key}"
 USER_PASS="${USER_PASS:-123456}"
 UNIQ_TAG="$(date +%s)-$RANDOM"
@@ -124,7 +124,7 @@ Usage:
 
 Examples:
   ./scripts/test-level7-61-70cases.sh
-  CASE61_TARGET_RPS=700 ./scripts/test-level7-61-70cases.sh http://localhost:3000
+  CASE61_TARGET_RPS=700 ./scripts/test-level7-61-70cases.sh http://localhost:42100
 
 Notes:
   - Cases 61-69 run in Docker/local environments.
@@ -547,7 +547,7 @@ redis_info_stats() {
 
   if command -v redis-cli >/dev/null 2>&1; then
     local out
-    out=$(redis-cli -h localhost -p 6379 INFO stats 2>/dev/null || true)
+    out=$(redis-cli -h localhost -p 42131 INFO stats 2>/dev/null || true)
     if [[ -n "$out" ]]; then
       local h m
       h=$(extract_stat "$out" "keyspace_hits")

@@ -111,6 +111,6 @@ Reason: basic health endpoints and partial structured logging exist, but there i
 
 No runtime checks were executed to avoid altering the environment. If desired, run:
 
-- `curl http://localhost:3000/healthz`
-- `curl http://localhost:3005/healthz`
+- `curl http://localhost:42100/healthz`
+- `curl http://localhost:42105/healthz`
   and capture outputs in this report.

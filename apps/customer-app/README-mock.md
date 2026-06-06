@@ -39,10 +39,10 @@ Plus: Ride History, Profile & Wallet (tab bar).
 
 ```
 cd apps/customer-app
-npx expo start --port 8082 --clear
+npx expo start --port 42181 --clear
 ```
 
-Scan `exp://<LAN-IP>:8082` in Expo Go.
+Scan `exp://<LAN-IP>:42181` in Expo Go.
 
 ## Notes
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_BASE_URL="http://localhost:3000"
+DEFAULT_BASE_URL="http://localhost:42100"
 BASE_URL="${1:-${BASE_URL:-$DEFAULT_BASE_URL}}"
-PAYMENT_URL="${PAYMENT_URL:-http://localhost:3007}"
+PAYMENT_URL="${PAYMENT_URL:-http://localhost:42107}"
 AUTO_BOOTSTRAP_INFRA="${AUTO_BOOTSTRAP_INFRA:-0}"
 UNIQ_TAG="$(date +%s)-$RANDOM"
 USER_PASS="${USER_PASS:-123456}"
@@ -29,7 +29,7 @@ Usage:
 
 Examples:
   ./scripts/test-level4-31-40cases.sh
-  ./scripts/test-level4-31-40cases.sh http://localhost:3000
+  ./scripts/test-level4-31-40cases.sh http://localhost:42100
 
 Notes:
   - Default BASE_URL: $DEFAULT_BASE_URL

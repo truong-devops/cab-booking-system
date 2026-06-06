@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_BASE_URL="http://localhost:3000"
+DEFAULT_BASE_URL="http://localhost:42100"
 BASE_URL="${1:-${BASE_URL:-$DEFAULT_BASE_URL}}"
-BOOKING_URL="${BOOKING_URL:-http://localhost:3003}"
+BOOKING_URL="${BOOKING_URL:-http://localhost:42104}"
 USER_PASS="${USER_PASS:-123456}"
 JWT_SECRET="${JWT_SECRET:-dev-secret}"
 UNIQ_TAG="$(date +%s)-$RANDOM"
@@ -27,7 +27,7 @@ DEFAULT_CASE94_EVIDENCE_FILE="$SCRIPT_DIR/evidence/case94-mtls-service-to-servic
 CASE100_LOGIN_MAX_ATTEMPTS="${CASE100_LOGIN_MAX_ATTEMPTS:-6}"
 CASE100_LOGIN_RETRY_DELAY_SEC="${CASE100_LOGIN_RETRY_DELAY_SEC:-2}"
 CASE100_LOGIN_COOLDOWN_SEC="${CASE100_LOGIN_COOLDOWN_SEC:-$AUTH_BOOTSTRAP_COOLDOWN_SEC}"
-CASE99_TLS_PORT="${CASE99_TLS_PORT:-3443}"
+CASE99_TLS_PORT="${CASE99_TLS_PORT:-42101}"
 CASE99_BASE_HOST="${CASE99_BASE_HOST:-}"
 if [[ -z "$CASE94_EVIDENCE_FILE" && -f "$DEFAULT_CASE94_EVIDENCE_FILE" ]]; then
   CASE94_EVIDENCE_FILE="$DEFAULT_CASE94_EVIDENCE_FILE"
@@ -61,7 +61,7 @@ Usage:
 
 Examples:
   ./scripts/test-level10-91-100cases.sh
-  ./scripts/test-level10-91-100cases.sh http://localhost:3000
+  ./scripts/test-level10-91-100cases.sh http://localhost:42100
 
 Notes:
   - Default BASE_URL: $DEFAULT_BASE_URL
@@ -620,7 +620,7 @@ fi
 # Case 98: Rate limiting
 if ensure_gateway_ready "98"; then
   C98_RESULT=$(BASE_URL="$BASE_URL" CASE98_BURST_COUNT="$CASE98_BURST_COUNT" CASE98_CONCURRENCY="$CASE98_CONCURRENCY" CASE98_MAX_TIME_MS="$CASE98_MAX_TIME_MS" node - <<'NODE'
-const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+const baseUrl = process.env.BASE_URL || 'http://localhost:42100';
 const total = Number(process.env.CASE98_BURST_COUNT || 120);
 const concurrency = Number(process.env.CASE98_CONCURRENCY || 24);
 const maxTimeMs = Number(process.env.CASE98_MAX_TIME_MS || 4000);

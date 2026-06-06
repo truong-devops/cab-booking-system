@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-http://localhost:42100}"
 AI_URL="${AI_URL:-http://host.docker.internal:3013}"
 PASS="${PASS:-123456}"
 USER_TOKEN="${USER_TOKEN:-}"

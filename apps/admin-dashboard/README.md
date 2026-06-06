@@ -15,11 +15,11 @@ Admin console for ride-hailing operations (Auth, Users, Drivers, Rides, Monitori
 
 ## Environment
 
-- `VITE_API_BASE_URL` (default: `http://localhost:3000`)
+- `VITE_API_BASE_URL` (defaults to same-origin; local `.env` uses `http://localhost:42100`)
 - `VITE_MOCK=true` to run without backend
-- `VITE_REALTIME_WS_URL` (example: `ws://localhost:7071`) to stream live map markers
-- `VITE_KIBANA_URL` (default: `http://localhost:5601`)
-- `VITE_GRAFANA_URL` (default: `http://localhost:3001`)
+- `VITE_REALTIME_WS_URL` (example: `ws://localhost:42171`) to stream live map markers
+- `VITE_KIBANA_URL` (default: `http://localhost:42193`)
+- `VITE_GRAFANA_URL` (default: `http://localhost:42190`)
 - `VITE_KIBANA_LOGS_PATH` (default: `/app/discover`)
 - `VITE_KIBANA_AUDIT_PATH` (default: `/app/dashboards`)
 - `VITE_GRAFANA_DASHBOARD_PATH` (default: `/d/service-overview/service-overview`)

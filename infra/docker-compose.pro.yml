@@ -39,17 +39,19 @@ services:
       context: ..
       dockerfile: services/api-gateway/Dockerfile
     ports:
-      - '3000:3000'
-      - '3443:3443'
+      - '${API_GATEWAY_HOST_PORT:-42100}:3000'
+      - '${API_GATEWAY_HTTPS_HOST_PORT:-42101}:3443'
     environment:
       SERVICE_NAME: api-gateway
       OTEL_SERVICE_NAME: api-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+      PORT: 3000
       JWT_SECRET: ${JWT_SECRET:-dev-secret}
       AUTH_SERVICE_URL: http://auth-service:4001
       BOOKING_SERVICE_URL: http://booking-service:3003
       DRIVER_SERVICE_URL: http://driver-service:3011
       ETA_SERVICE_URL: http://eta-service:3012
+      PLACES_SERVICE_URL: http://places-service:3014
       NOTIFICATION_SERVICE_URL: http://notification-service:3010
       PAYMENT_SERVICE_URL: http://payment-service:3007
       PRICING_SERVICE_URL: http://pricing-service:3006
@@ -68,6 +70,7 @@ services:
       - booking-service
       - driver-service
       - eta-service
+      - places-service
       - notification-service
       - payment-service
       - pricing-service
@@ -216,8 +219,6 @@ services:
     build:
       context: ..
       dockerfile: services/eta-service/Dockerfile
-    ports:
-      - '3012:3012'
     environment:
       SERVICE_NAME: eta-service
       OTEL_SERVICE_NAME: eta-service
@@ -225,12 +226,28 @@ services:
     networks:
       - backend
 
+  places-service:
+    build:
+      context: ..
+      dockerfile: services/places-service/Dockerfile
+    environment:
+      SERVICE_NAME: places-service
+      OTEL_SERVICE_NAME: places-service
+      PORT: 3014
+      DATABASE_URL: postgres://cab:cabpass@postgres:5432/places-service_db
+      PLACES_PROVIDER_ENABLED: ${PLACES_PROVIDER_ENABLED:-true}
+      PLACES_PROVIDER_BASE_URL: ${PLACES_PROVIDER_BASE_URL:-https://nominatim.openstreetmap.org}
+      PLACES_PROVIDER_TIMEOUT_MS: ${PLACES_PROVIDER_TIMEOUT_MS:-1800}
+      PLACES_PROVIDER_COUNTRY_CODES: ${PLACES_PROVIDER_COUNTRY_CODES:-vn}
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
   ai-service:
     build:
       context: ..
       dockerfile: services/ai-service/Dockerfile
-    ports:
-      - '3013:3013'
     environment:
       SERVICE_NAME: ai-service
       OTEL_SERVICE_NAME: ai-service
@@ -279,8 +296,6 @@ services:
     build:
       context: ..
       dockerfile: services/pricing-service/Dockerfile
-    ports:
-      - '3006:3006'
     environment:
       SERVICE_NAME: pricing-service
       OTEL_SERVICE_NAME: pricing-service
@@ -300,8 +315,6 @@ services:
     build:
       context: ..
       dockerfile: services/payment-service/Dockerfile
-    ports:
-      - '3007:3007'
     environment:
       SERVICE_NAME: payment-service
       OTEL_SERVICE_NAME: payment-service
@@ -355,8 +368,8 @@ services:
       PAYOS_API_KEY: ${PAYOS_API_KEY:-}
       PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
       PAYOS_PARTNER_CODE: ${PAYOS_PARTNER_CODE:-}
-      PAYOS_RETURN_URL: ${PAYOS_RETURN_URL:-http://localhost:5173/admin/payments?payos=success}
-      PAYOS_CANCEL_URL: ${PAYOS_CANCEL_URL:-http://localhost:5173/admin/payments?payos=cancel}
+      PAYOS_RETURN_URL: ${PAYOS_RETURN_URL:-http://localhost:${ADMIN_DASHBOARD_PORT:-42170}/admin/payments?payos=success}
+      PAYOS_CANCEL_URL: ${PAYOS_CANCEL_URL:-http://localhost:${ADMIN_DASHBOARD_PORT:-42170}/admin/payments?payos=cancel}
       PAYOS_QR_SOURCE: ${PAYOS_QR_SOURCE:-PAYOS}
       PAYOS_AUTO_SYNC_ENABLED: ${PAYOS_AUTO_SYNC_ENABLED:-false}
       PAYOS_AUTO_SYNC_INTERVAL_MS: ${PAYOS_AUTO_SYNC_INTERVAL_MS:-15000}
@@ -408,7 +421,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin123
     ports:
-      - '5050:80'
+      - '${PGADMIN_HOST_PORT:-42137}:80'
     volumes:
       - cab_pgadmin_data:/var/lib/pgadmin
     depends_on:

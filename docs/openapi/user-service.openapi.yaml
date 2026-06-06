@@ -8,9 +8,9 @@ info:
     the gateway validates JWT and injects these headers. Internal endpoints require x-internal-key
     and are not exposed by the gateway proxy.
 servers:
-  - url: http://localhost:4004
-    description: Direct user-service
-  - url: http://localhost:3000
+  - url: http://localhost:42103
+    description: Direct debug-only user-service
+  - url: http://localhost:42100
     description: API Gateway (prefix /v1/users)
 components:
   securitySchemes:

@@ -9,9 +9,9 @@ info:
     - supports `drop` + `distance_km` + idempotency
     - emits `ride.created` and rubric compatibility event `ride_events` (ride_requested)
 servers:
-  - url: http://localhost:3003
-    description: Direct booking-service
-  - url: http://localhost:3000
+  - url: http://localhost:42104
+    description: Direct debug-only booking-service
+  - url: http://localhost:42100
     description: API Gateway (prefix /v1/bookings)
 components:
   parameters:

@@ -47,7 +47,7 @@ function Update-EnvFile {
         return
     }
 
-    $newLine = "EXPO_PUBLIC_API_BASE_URL=http://$Ip`:3000"
+    $newLine = "EXPO_PUBLIC_API_BASE_URL=http://$Ip`:42100"
     $lines = Get-Content $Path
     $found = $false
     $lines = $lines | ForEach-Object {

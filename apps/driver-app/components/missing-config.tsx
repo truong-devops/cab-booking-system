@@ -7,7 +7,7 @@ export function MissingConfig() {
       <View style={styles.card}>
         <Text style={styles.title}>Thiếu cấu hình API</Text>
         <Text style={styles.body}>Ứng dụng cần biến môi trường EXPO_PUBLIC_API_BASE_URL để gọi Backend.</Text>
-        <Text style={styles.code}>EXPO_PUBLIC_API_BASE_URL=http://&lt;IP_MAY&gt;:3000</Text>
+        <Text style={styles.code}>EXPO_PUBLIC_API_BASE_URL=http://&lt;IP_MAY&gt;:42100</Text>
         <Text style={styles.note}>Sau khi cập nhật .env, hãy restart Expo (Ctrl+C rồi chạy lại).</Text>
       </View>
     </SafeAreaView>

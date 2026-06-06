@@ -7,17 +7,16 @@ function inferApiBaseUrl() {
   }
 
   if (typeof window !== 'undefined' && window.location?.hostname) {
-    const protocol = window.location.protocol || 'http:';
-    return `${protocol}//${window.location.hostname}:3000`;
+    return window.location.origin.replace(/\/+$/, '');
   }
 
   const hostUri = Constants.expoConfig?.hostUri || '';
   const host = hostUri.split(':')[0];
   if (host) {
-    return `http://${host}:3000`;
+    return `http://${host}:42100`;
   }
 
-  return 'http://127.0.0.1:3000';
+  return 'http://127.0.0.1:42100';
 }
 
 export const API_BASE_URL = inferApiBaseUrl();

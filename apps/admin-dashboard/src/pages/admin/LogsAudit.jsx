@@ -19,8 +19,8 @@ function joinUrl(baseUrl, path) {
 function LogsAudit() {
   const [tab, setTab] = useState('logs');
 
-  const kibanaBase = trimBaseUrl(import.meta.env.VITE_KIBANA_URL, 'http://localhost:5601');
-  const grafanaBase = trimBaseUrl(import.meta.env.VITE_GRAFANA_URL, 'http://localhost:3001');
+  const kibanaBase = trimBaseUrl(import.meta.env.VITE_KIBANA_URL, 'http://localhost:42193');
+  const grafanaBase = trimBaseUrl(import.meta.env.VITE_GRAFANA_URL, 'http://localhost:42190');
 
   const kibanaLogsPath = import.meta.env.VITE_KIBANA_LOGS_PATH || '/app/discover';
   const kibanaAuditPath = import.meta.env.VITE_KIBANA_AUDIT_PATH || '/app/dashboards';

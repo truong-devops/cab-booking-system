@@ -137,7 +137,7 @@ async function getUserById(userId, context = {}) {
     return cached;
   }
 
-  const baseUrl = process.env.USER_SERVICE_BASE_URL || process.env.USER_SERVICE_URL || 'http://localhost:4004';
+  const baseUrl = process.env.USER_SERVICE_BASE_URL || process.env.USER_SERVICE_URL || 'http://user-service:4004';
 
   const internalKey = process.env.INTERNAL_API_KEY;
   const path = internalKey ? `/internal/users/${userId}` : `/v1/users/${userId}`;
