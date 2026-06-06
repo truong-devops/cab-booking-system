@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-http://localhost:42100}"
 USER_EMAIL="${USER_EMAIL:-user1@test.com}"
 USER_PASSWORD="${USER_PASSWORD:-secret123}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@test.com}"

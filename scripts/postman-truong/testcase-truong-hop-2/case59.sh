@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
-AGENT_URL="${AGENT_URL:-http://localhost:3013/v1/ai/agent/select-driver}"
+AGENT_URL="${AGENT_URL:-http://localhost:42112/v1/ai/agent/select-driver}"
 AI_URL="${AI_URL:-http://host.docker.internal:3013}"
 USER_TOKEN="${USER_TOKEN:-}"
 

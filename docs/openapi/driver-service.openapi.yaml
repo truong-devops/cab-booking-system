@@ -5,9 +5,9 @@ info:
   description: |
     Driver service for driver profile, vehicle, online/offline, and location updates.
 servers:
-  - url: http://localhost:3011
-    description: Direct driver-service
-  - url: http://localhost:3000
+  - url: http://localhost:42110
+    description: Direct debug-only driver-service
+  - url: http://localhost:42100
     description: API Gateway (prefix /v1/driver, /v1/admin, /v1/internal)
 components:
   securitySchemes:

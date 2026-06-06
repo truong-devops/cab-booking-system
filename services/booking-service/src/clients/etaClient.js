@@ -7,7 +7,7 @@ const {
   buildCircuitOpenError
 } = require('./dependencyCircuitBreaker');
 
-const baseURL = process.env.ETA_BASE_URL || 'http://localhost:3012';
+const baseURL = process.env.ETA_BASE_URL || 'http://eta-service:3012';
 const REQUEST_TIMEOUT_MS = Math.max(200, Number(process.env.ETA_HTTP_TIMEOUT_MS || 1500));
 const RETRY_MAX = Number(process.env.ETA_HTTP_RETRY_MAX || 1);
 const RETRY_BACKOFF_BASE_MS = Number(process.env.ETA_HTTP_RETRY_BACKOFF_MS || 100);

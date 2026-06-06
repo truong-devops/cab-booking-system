@@ -132,7 +132,7 @@ Nếu JSON/envelope sai chuẩn: đẩy vào `<topic>.dlq`.
 ## 5.1 DB chính
 
 - DB chính đang dùng trong runtime: **MongoDB** (`mongodb` Node driver), không phải PostgreSQL.
-- URI mặc định: `mongodb://localhost:27017/ride_service`.
+- URI mặc định trong Docker network: `mongodb://mongo:27017/ride_service`; khi truy cập từ máy host dùng port local `mongodb://localhost:42132/ride_service`.
 - Tên DB resolve theo thứ tự:
   1. `MONGODB_DB`/`MONGO_DB`
   2. Tên DB trong URI

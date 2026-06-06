@@ -1,4 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+function resolveApiBaseUrl() {
+  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL;
+  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin;
+  return '';
+}
+
+const API_BASE_URL = resolveApiBaseUrl().replace(/\/+$/, '');
 export const isMock = import.meta.env.VITE_MOCK === 'true';
 
 function getToken() {

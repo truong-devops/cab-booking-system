@@ -94,5 +94,5 @@ Cac case nay Postman rat huu ich de tao request/kich hoat flow. Nhung neu muon b
 
 ## Luu Y Quan Trong
 
-- Cac Postman collection co bien `bookingUrl=http://localhost:3002`, nhung config hien tai booking-service trong `infra/docker-compose.dev.yml` va gateway la port `3003`. Khi test direct booking-service, nen sua `bookingUrl` thanh `http://localhost:3003`.
+- Cac Postman collection dung `bookingUrl=http://localhost:42104` de goi booking-service tu may host. Trong Docker network, booking-service van chay noi bo o port `3003`.
 - Script shell strict hon Postman. Neu Postman pass nhung script fail, khi cham diem nen uu tien script vi script kiem tra them p95, rollback, Kafka lag, Redis hit rate, Docker fault injection hoac log evidence.

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_BASE_URL="http://localhost:3000"
+DEFAULT_BASE_URL="http://localhost:42100"
 BASE_URL="${1:-${BASE_URL:-$DEFAULT_BASE_URL}}"
-AI_URL="${AI_URL:-http://localhost:3013}"
-ETA_URL="${ETA_URL:-http://localhost:3012}"
-PRICING_URL="${PRICING_URL:-http://localhost:3006}"
+AI_URL="${AI_URL:-http://localhost:42112}"
+ETA_URL="${ETA_URL:-http://localhost:42111}"
+PRICING_URL="${PRICING_URL:-http://localhost:42106}"
 INTERNAL_API_KEY="${INTERNAL_API_KEY:-dev-internal-key}"
 UNIQ_TAG="$(date +%s)-$RANDOM"
 USER_EMAIL="${USER_EMAIL:-level5-strict-${UNIQ_TAG}@test.com}"

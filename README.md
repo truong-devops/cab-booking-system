@@ -52,29 +52,60 @@ The repository contains two gateway implementations:
 - `services/gateway`: Go gateway used by `infra/docker-compose.dev.yml` for local and load-test workloads.
 - `services/api-gateway`: Node.js/Express gateway used by `infra/docker-compose.pro.yml` and available for feature-parity development.
 
-Both expose the gateway on HTTP port `3000` and development HTTPS port `3443`.
+For normal local development, use one entrypoint:
+
+```text
+http://localhost:42100
+```
+
+That port is the API Gateway. Frontend apps, Postman collections, curl commands, and normal tests should call the gateway instead of calling individual services directly. Development HTTPS is available at `https://localhost:42101`.
+
+The other `421xx` host ports are only debug shortcuts for calling a single service directly from your machine.
 
 ## Components
 
 ### Backend Services
 
-The **Host access** column reflects the default local stack in `infra/docker-compose.dev.yml`. Services without a published host port remain reachable inside the Docker `backend` network through the API Gateway.
+These are the ports services listen on inside Docker and in deployment. Service-to-service URLs should use these internal ports with service DNS names such as `http://booking-service:3003`.
 
-| Service                |  Internal port | Host access    | Data store               | Responsibility                                                                                                  |
-| ---------------------- | -------------: | -------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `api-gateway`          | `3000`, `3443` | `3000`, `3443` | None                     | Authentication enforcement, routing, rate limiting, retry, and circuit breaking.                                |
-| `auth-service`         |         `4001` | Gateway only   | PostgreSQL               | Registration, login, access tokens, refresh tokens, logout, and token verification.                             |
-| `user-service`         |         `4004` | Gateway only   | PostgreSQL               | User profiles, roles, statuses, and internal user lookup.                                                       |
-| `driver-service`       |         `3011` | `3011`         | PostgreSQL, Redis        | Driver profiles, vehicles, availability, heartbeat, and location/geo state.                                     |
-| `booking-service`      |         `3003` | `3003`         | PostgreSQL, Kafka        | Booking lifecycle, price snapshot, driver-selection workflow, payment initialization, and booking outbox/inbox. |
-| `ride-service`         |         `3005` | Gateway only   | MongoDB, Redis, Kafka    | Ride state machine, assignment, ride event processing, and ride outbox/inbox.                                   |
-| `pricing-service`      |         `3006` | `3006`         | Redis                    | Fare quotes, rate rules, surge configuration, coupons, and quote finalization.                                  |
-| `payment-service`      |         `3007` | `3007`         | PostgreSQL, Redis, Kafka | Payment lifecycle, VietQR/PayOS integration, wallet/withdrawals, and payment events.                            |
-| `notification-service` |         `3010` | Gateway only   | MongoDB                  | Notification persistence, preferences, dispatch, deduplication, and retry.                                      |
-| `review-service`       |         `3009` | Gateway only   | PostgreSQL, Redis        | Ratings, comments, tips, moderation states, and idempotency.                                                    |
-| `eta-service`          |         `3012` | `3012`         | None                     | ETA estimation.                                                                                                 |
-| `places-service`       |         `3014` | `3014`         | PostgreSQL               | Place search, recent places, and optional Nominatim integration.                                                |
-| `ai-service`           |         `3013` | `3013`         | In-memory/config         | Driver recommendation, fraud scoring, demand forecasting, drift checks, and agent decisions.                    |
+| Service                | Internal port | Data store               | Responsibility                                                                                                  |
+| ---------------------- | ------------: | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `api-gateway`          | `3000`, `3443` | None                     | Authentication enforcement, routing, rate limiting, retry, and circuit breaking.                                |
+| `auth-service`         |        `4001` | PostgreSQL               | Registration, login, access tokens, refresh tokens, logout, and token verification.                             |
+| `user-service`         |        `4004` | PostgreSQL               | User profiles, roles, statuses, and internal user lookup.                                                       |
+| `driver-service`       |        `3011` | PostgreSQL, Redis        | Driver profiles, vehicles, availability, heartbeat, and location/geo state.                                     |
+| `booking-service`      |        `3003` | PostgreSQL, Kafka        | Booking lifecycle, price snapshot, driver-selection workflow, payment initialization, and booking outbox/inbox. |
+| `ride-service`         |        `3005` | MongoDB, Redis, Kafka    | Ride state machine, assignment, ride event processing, and ride outbox/inbox.                                   |
+| `pricing-service`      |        `3006` | Redis                    | Fare quotes, rate rules, surge configuration, coupons, and quote finalization.                                  |
+| `payment-service`      |        `3007` | PostgreSQL, Redis, Kafka | Payment lifecycle, VietQR/PayOS integration, wallet/withdrawals, and payment events.                            |
+| `notification-service` |        `3010` | MongoDB                  | Notification persistence, preferences, dispatch, deduplication, and retry.                                      |
+| `review-service`       |        `3009` | PostgreSQL, Redis        | Ratings, comments, tips, moderation states, and idempotency.                                                    |
+| `eta-service`          |        `3012` | None                     | ETA estimation.                                                                                                 |
+| `places-service`       |        `3014` | PostgreSQL               | Place search, recent places, and optional Nominatim integration.                                                |
+| `ai-service`           |        `3013` | In-memory/config         | Driver recommendation, fraud scoring, demand forecasting, drift checks, and agent decisions.                    |
+
+### Local Host Ports
+
+`infra/docker-compose.dev.yml` publishes the gateway plus optional direct service ports on the host. Only the gateway ports are normal entrypoints. Service-specific ports are local debug shortcuts only; do not use them as production ports or service-to-service URLs.
+
+| Local URL                 | Use when                                                                 |
+| ------------------------- | ------------------------------------------------------------------------ |
+| `http://localhost:42100`  | Normal API entrypoint through the gateway.                               |
+| `https://localhost:42101` | Development HTTPS gateway.                                               |
+| `http://localhost:42102`  | Debug auth-service directly.                                             |
+| `http://localhost:42103`  | Debug user-service directly.                                             |
+| `http://localhost:42104`  | Debug booking-service directly.                                          |
+| `http://localhost:42105`  | Debug ride-service directly.                                             |
+| `http://localhost:42106`  | Debug pricing-service directly.                                          |
+| `http://localhost:42107`  | Debug payment-service directly.                                          |
+| `http://localhost:42108`  | Debug review-service directly.                                           |
+| `http://localhost:42109`  | Debug notification-service directly.                                     |
+| `http://localhost:42110`  | Debug driver-service directly.                                           |
+| `http://localhost:42111`  | Debug eta-service directly.                                              |
+| `http://localhost:42112`  | Debug ai-service directly.                                               |
+| `http://localhost:42113`  | Debug places-service directly.                                           |
+
+Deployment rule: expose only the gateway through ingress/load balancer. Keep `PORT` and service-to-service URLs on container/internal ports; keep `421xx` values for local host bindings only.
 
 ### Client Applications
 
@@ -262,12 +293,12 @@ Prometheus rules  -> Alertmanager -> Webhook/Slack/Telegram
 
 | Component     | URL                     | Purpose                                                               |
 | ------------- | ----------------------- | --------------------------------------------------------------------- |
-| Grafana       | `http://localhost:3001` | Provisioned service, dependency, business-flow, and Kafka dashboards. |
-| Prometheus    | `http://localhost:9090` | Metrics, scrape targets, and alert rules.                             |
-| Alertmanager  | `http://localhost:9093` | Alert routing and receiver status.                                    |
-| Tempo         | `http://localhost:3200` | Distributed trace storage.                                            |
-| Kibana        | `http://localhost:5601` | Log search and dashboards.                                            |
-| Elasticsearch | `http://localhost:9200` | Central log storage.                                                  |
+| Grafana       | `http://localhost:42190` | Provisioned service, dependency, business-flow, and Kafka dashboards. |
+| Prometheus    | `http://localhost:42191` | Metrics, scrape targets, and alert rules.                             |
+| Alertmanager  | `http://localhost:42192` | Alert routing and receiver status.                                    |
+| Tempo         | `http://localhost:42188` | Distributed trace storage.                                            |
+| Kibana        | `http://localhost:42193` | Log search and dashboards.                                            |
+| Elasticsearch | `http://localhost:42194` | Central log storage.                                                  |
 
 Docker Desktop can route container logs to Logstash through `host.docker.internal`. On Linux, set `LOGSTASH_SYSLOG_HOST` to an address reachable from Docker containers.
 

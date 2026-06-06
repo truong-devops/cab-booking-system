@@ -1,4 +1,4 @@
 server.host: '0.0.0.0'
-server.publicBaseUrl: 'http://localhost:5601'
+server.publicBaseUrl: 'http://localhost:42193'
 elasticsearch.hosts: ['http://elasticsearch:9200']
 monitoring.ui.container.elasticsearch.enabled: true

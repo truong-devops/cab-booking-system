@@ -737,11 +737,11 @@ Endpoint thường dùng:
 
 | Công cụ | URL |
 | --- | --- |
-| Kibana | `http://localhost:5601` |
+| Kibana | `http://localhost:42193` |
 | Elasticsearch | `http://localhost:9200` |
 | Logstash API | `http://localhost:9600` |
-| Grafana | `http://localhost:3001` |
-| Prometheus | `http://localhost:9090` |
+| Grafana | `http://localhost:42190` |
+| Prometheus | `http://localhost:42191` |
 | Tempo | `http://localhost:3200` |
 
 Tài liệu liên quan:

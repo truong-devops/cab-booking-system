@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_BASE_URL="http://localhost:3000"
+DEFAULT_BASE_URL="http://localhost:42100"
 BASE_URL="${1:-${BASE_URL:-$DEFAULT_BASE_URL}}"
-BOOKING_URL="${BOOKING_URL:-http://localhost:3003}"
-DRIVER_URL="${DRIVER_URL:-http://localhost:3011}"
-PRICING_URL="${PRICING_URL:-http://localhost:3006}"
-ETA_URL="${ETA_URL:-http://localhost:3012}"
+BOOKING_URL="${BOOKING_URL:-http://localhost:42104}"
+DRIVER_URL="${DRIVER_URL:-http://localhost:42110}"
+PRICING_URL="${PRICING_URL:-http://localhost:42106}"
+ETA_URL="${ETA_URL:-http://localhost:42111}"
 COMPOSE_FILE="${COMPOSE_FILE:-infra/docker-compose.dev.yml}"
 INTERNAL_API_KEY="${INTERNAL_API_KEY:-dev-internal-key}"
 USER_PASS="${USER_PASS:-123456}"
@@ -42,7 +42,7 @@ Usage:
 
 Examples:
   ./scripts/test-level8-71-80cases.sh
-  ./scripts/test-level8-71-80cases.sh http://localhost:3000
+  ./scripts/test-level8-71-80cases.sh http://localhost:42100
 
 Notes:
   - Default BASE_URL: $DEFAULT_BASE_URL

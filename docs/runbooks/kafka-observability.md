@@ -26,7 +26,7 @@ Cách kiểm tra nhanh:
 
 ```bash
 # Lấy traceId từ response header của request tạo booking
-curl -i -X POST http://localhost:3003/api/v1/bookings \
+curl -i -X POST http://localhost:42104/api/v1/bookings \
   -H 'content-type: application/json' \
   -d '{"pickup":{"lat":10.77,"lng":106.69},"dropoff":{"lat":10.78,"lng":106.70},"vehicleType":"STANDARD"}'
 
@@ -65,7 +65,7 @@ docker compose --env-file .env -f infra/docker-compose.dev.yml logs booking-serv
 1. Xác nhận phạm vi:
 
 ```bash
-curl -sG http://localhost:9090/api/v1/query \
+curl -sG http://localhost:42191/api/v1/query \
   --data-urlencode 'query=max by (service_name,consumer_group,topic) (cab_kafka_consumer_lag)'
 ```
 
@@ -122,7 +122,7 @@ $COMPOSE up -d
 Kiểm tra rule đã load:
 
 ```bash
-curl -s http://localhost:9090/api/v1/rules | rg 'KafkaConsumerLagHigh|KafkaOutboxBacklogHigh|KafkaPublishErrorRateHigh|KafkaDlqRateHigh|KafkaRetryRateHigh|KafkaProcessingLatencyP95High'
+curl -s http://localhost:42191/api/v1/rules | rg 'KafkaConsumerLagHigh|KafkaOutboxBacklogHigh|KafkaPublishErrorRateHigh|KafkaDlqRateHigh|KafkaRetryRateHigh|KafkaProcessingLatencyP95High'
 ```
 
 1. `KafkaOutboxBacklogHigh*` + `KafkaPublishErrorRateHigh` + `KafkaRetryRateHigh` + `KafkaProcessingLatencyP95High`

@@ -95,12 +95,14 @@ Architecture: Microservices + Event-driven
 
 6. Cấu hình môi trường
 
+Luồng bình thường nên gọi qua API Gateway `http://localhost:42100`. Các port `42104`, `42106`, `42133` bên dưới chỉ dùng khi chạy/debug service trực tiếp từ máy host.
+
 Tạo file .env trong thư mục booking-service:
 
 SERVICE_NAME=booking-service
-PORT=3003
-KAFKA_BROKERS=localhost:29092
-PRICING_BASE_URL=http://localhost:3006
+PORT=42104
+KAFKA_BROKERS=localhost:42133
+PRICING_BASE_URL=http://localhost:42106
 
 7. Chạy service (Local)
    7.1 Chạy hạ tầng Kafka
@@ -119,7 +121,7 @@ node src/server.js
 
 Service chạy tại:
 
-http://localhost:3003
+http://localhost:42104
 
 8. API Documentation
    8.1 Health Check

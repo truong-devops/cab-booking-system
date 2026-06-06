@@ -22,10 +22,13 @@ Contract: /contracts/openapi/api-gateway.yaml
 
 Build + run:
 
+The host mapping below publishes the gateway itself. Downstream service URLs should point to internal service DNS in compose/deploy, or to direct `421xx` debug ports only when running gateway standalone from the host.
+
 ```bash
 docker build -t api-gateway .
-docker run -p 3000:3000 \
+docker run -p 42100:3000 \
+  -e PORT=3000 \
   -e JWT_SECRET=your-secret \
-  -e RIDE_SERVICE_URL=http://host.docker.internal:3005 \
+  -e RIDE_SERVICE_URL=http://host.docker.internal:42105 \
   api-gateway
 ```

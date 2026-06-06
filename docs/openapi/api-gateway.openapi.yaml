@@ -8,8 +8,8 @@ info:
     - JWT is required for all domains except those in AUTH_PUBLIC_DOMAINS (default: auth).
     - Gateway injects x-user-id/x-user-role/x-user-roles into upstream requests.
 servers:
-  - url: http://localhost:3000
-    description: API Gateway
+  - url: http://localhost:42100
+    description: API Gateway - normal local entrypoint
 components:
   securitySchemes:
     bearerAuth:

@@ -30,7 +30,7 @@ const router = express.Router();
 // Auto-assign is OFF by default; set AUTO_ASSIGN_DRIVER=true to force assign to DEFAULT_DRIVER_ID.
 const AUTO_ASSIGN_DRIVER = String(process.env.AUTO_ASSIGN_DRIVER || 'false').toLowerCase() === 'true';
 const DEFAULT_DRIVER_ID = String(process.env.DEFAULT_DRIVER_ID || '').trim();
-const PAYMENT_SERVICE_URL = String(process.env.PAYMENT_SERVICE_URL || 'http://localhost:3007').replace(/\/+$/, '');
+const PAYMENT_SERVICE_URL = String(process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3007').replace(/\/+$/, '');
 
 router.use(requireAuth);
 

@@ -5,9 +5,9 @@ info:
   description: |
     Notification service for in-app and multi-channel notifications.
 servers:
-  - url: http://localhost:3010
-    description: Direct notification-service
-  - url: http://localhost:3000
+  - url: http://localhost:42109
+    description: Direct debug-only notification-service
+  - url: http://localhost:42100
     description: API Gateway (prefix /v1/notifications or /v1/notifications/users)
 components:
   securitySchemes:

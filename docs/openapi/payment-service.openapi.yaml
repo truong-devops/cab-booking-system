@@ -6,9 +6,9 @@ info:
     Payment service for creating and managing payments.
     All endpoints require JWT bearer auth; status updates require admin role.
 servers:
-  - url: http://localhost:3007
-    description: Direct payment-service
-  - url: http://localhost:3000
+  - url: http://localhost:42107
+    description: Direct debug-only payment-service
+  - url: http://localhost:42100
     description: API Gateway (prefix /v1/payments)
 components:
   securitySchemes:

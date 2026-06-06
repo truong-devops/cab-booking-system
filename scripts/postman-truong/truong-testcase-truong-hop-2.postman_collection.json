@@ -25,51 +25,51 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000"
+      "value": "http://localhost:42100"
     },
     {
       "key": "httpsBaseUrl",
-      "value": "https://localhost:3443"
+      "value": "https://localhost:42101"
     },
     {
       "key": "authUrl",
-      "value": "http://localhost:4001"
+      "value": "http://localhost:42102"
     },
     {
       "key": "bookingUrl",
-      "value": "http://localhost:3003"
+      "value": "http://localhost:42104"
     },
     {
       "key": "driverUrl",
-      "value": "http://localhost:3011"
+      "value": "http://localhost:42110"
     },
     {
       "key": "etaUrl",
-      "value": "http://localhost:3012"
+      "value": "http://localhost:42111"
     },
     {
       "key": "pricingUrl",
-      "value": "http://localhost:3006"
+      "value": "http://localhost:42106"
     },
     {
       "key": "aiUrl",
-      "value": "http://localhost:3013"
+      "value": "http://localhost:42112"
     },
     {
       "key": "paymentUrl",
-      "value": "http://localhost:3007"
+      "value": "http://localhost:42107"
     },
     {
       "key": "notificationUrl",
-      "value": "http://localhost:3010"
+      "value": "http://localhost:42109"
     },
     {
       "key": "prometheusUrl",
-      "value": "http://localhost:9090"
+      "value": "http://localhost:42191"
     },
     {
       "key": "grafanaUrl",
-      "value": "http://localhost:3001"
+      "value": "http://localhost:42190"
     },
     {
       "key": "jaegerUrl",

@@ -76,11 +76,11 @@ For Linux Docker Engine, set `LOGSTASH_SYSLOG_HOST` to a host/IP reachable from 
 
 Main endpoints:
 
-- Kibana: http://localhost:5601
+- Kibana: http://localhost:42193
 - Elasticsearch: http://localhost:9200
 - Logstash monitoring API: http://localhost:9600
-- Grafana: http://localhost:3001
-- Prometheus: http://localhost:9090
+- Grafana: http://localhost:42190
+- Prometheus: http://localhost:42191
 - Tempo: http://localhost:3200
 
 ## Log normalization

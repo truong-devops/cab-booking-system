@@ -8,7 +8,7 @@ else
   REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 fi
 
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-http://localhost:42100}"
 PASS="${PASS:-123456}"
 USER_TOKEN="${USER_TOKEN:-}"
 

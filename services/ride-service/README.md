@@ -5,10 +5,10 @@ Contract: /contracts/openapi/ride-service.yaml
 
 ## Environment
 
-- `MONGODB_URI` (default: `mongodb://localhost:27017/ride_service`)
+- `MONGODB_URI` (default: `mongodb://mongo:27017/ride_service`)
 - `MONGODB_DB` (optional database name override)
 - `MONGODB_TRANSACTIONS` (set to `false` to disable transactions on standalone MongoDB)
-- `REDIS_URL` (default: `redis://localhost:6379`)
+- `REDIS_URL` (default: `redis://redis:6379`)
 
 ## Tests
 

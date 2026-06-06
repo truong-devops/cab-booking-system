@@ -1,5 +1,5 @@
 Param(
-  [string]$BaseUrl = "http://localhost:3004",
+  [string]$BaseUrl = "http://localhost:42107",
   [string]$JwtSecret = "dev_access_secret"
 )
 
