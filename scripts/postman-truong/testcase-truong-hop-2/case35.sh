@@ -11,11 +11,11 @@ TS=$(date +%s)
 EMAIL="case35-time-${TS}@test.com"
 PASS="123456"
 
-curl -s -X POST http://localhost:3000/v1/auth/register \
+curl -s -X POST http://localhost:42100/v1/auth/register \
   -H 'Content-Type: application/json' \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"name\":\"Case35 Time User\",\"role\":\"user\"}" >/dev/null
 
-TOKEN=$(curl -s -X POST http://localhost:3000/v1/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:42100/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d "{\"identifier\":\"$EMAIL\",\"password\":\"$PASS\"}" | jq -r '.tokens.accessToken')
 
@@ -27,7 +27,7 @@ now_ms() {
 
 (
   START=$(now_ms)
-  curl -s -X POST http://localhost:3000/v1/bookings \
+  curl -s -X POST http://localhost:42100/v1/bookings \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $TOKEN" \
     -d "$BODY" \
@@ -40,7 +40,7 @@ now_ms() {
 
 (
   START=$(now_ms)
-  curl -s -X POST http://localhost:3000/v1/bookings \
+  curl -s -X POST http://localhost:42100/v1/bookings \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $TOKEN" \
     -d "$BODY" \

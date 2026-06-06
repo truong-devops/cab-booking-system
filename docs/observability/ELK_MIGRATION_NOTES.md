@@ -25,7 +25,7 @@ Unchanged paths:
 
 1. Loki is no longer part of active observability compose stack.
 2. Grafana no longer has Loki datasource in provisioning.
-3. Log exploration moves to Kibana (`http://localhost:5601`).
+3. Log exploration moves to Kibana (`http://localhost:42193`).
 
 ## Backward compatibility
 

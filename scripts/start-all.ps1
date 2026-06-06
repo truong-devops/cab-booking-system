@@ -48,7 +48,7 @@ function Set-ExpoBaseUrl {
         throw "Không tìm thấy file $EnvPath để cập nhật EXPO_PUBLIC_API_BASE_URL."
     }
 
-    $baseUrl = "EXPO_PUBLIC_API_BASE_URL=http://$Ip`:3000"
+    $baseUrl = "EXPO_PUBLIC_API_BASE_URL=http://$Ip`:42100"
     $pattern = '^\s*EXPO_PUBLIC_API_BASE_URL\s*='
     $lines = Get-Content $EnvPath
 
@@ -182,11 +182,11 @@ if (-not $SkipUi) {
 Write-Host ""
 Write-Host "All services launched."
 Write-Host "Quick access:"
-Write-Host "  API Gateway:   http://localhost:3000"
-Write-Host "  Admin UI:      http://localhost:5173  (user: admin@cab.local / password)"
-Write-Host "  Customer Expo: scan QR in its terminal; web dev often http://localhost:19006"
-Write-Host "  Driver Expo:   scan QR in its terminal; web dev often http://localhost:19007"
-Write-Host "  PgAdmin:       http://localhost:5050  (user: admin@example.com / admin123)"
+Write-Host "  API Gateway:   http://localhost:42100"
+Write-Host "  Admin UI:      http://localhost:42170  (user: admin@cab.local / password)"
+Write-Host "  Customer Expo: scan QR in its terminal; Metro http://localhost:42181"
+Write-Host "  Driver Expo:   scan QR in its terminal; Metro http://localhost:42182"
+Write-Host "  PgAdmin:       http://localhost:42137  (user: admin@example.com / admin123)"
 Write-Host ""
 Write-Host "Seeded demo accounts (Auth service):"
 Write-Host "  Admin:    admin@cab.local / password"

@@ -8,7 +8,7 @@ else
   REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 fi
 
-BASE_URL="${BASE_URL:-http://localhost:3000}"
+BASE_URL="${BASE_URL:-http://localhost:42100}"
 K6_BASE_URL="${K6_BASE_URL:-http://host.docker.internal:3000}"
 PASS="${PASS:-123456}"
 USER_TOKEN="${USER_TOKEN:-}"

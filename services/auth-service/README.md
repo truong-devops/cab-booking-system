@@ -30,19 +30,24 @@ psql "$DATABASE_URL" -f ./migrations/001_init.sql
 
 ## Run locally
 
+Use the API Gateway at `http://localhost:42100` for normal app/API flows. The command below runs auth-service directly for standalone debugging.
+
 ```bash
 npm install
-DATABASE_URL=postgres://cab:cabpass@localhost:5432/auth-service_db \
+DATABASE_URL=postgres://cab:cabpass@localhost:42130/auth-service_db \
 JWT_SECRET=dev-secret \
 npm start
 ```
 
 ## Docker
 
+This direct host port is for local debugging only; deployment should keep auth-service internal on port `4001`.
+
 ```bash
 docker build -t auth-service .
-docker run -p 4001:4001 \
-  -e DATABASE_URL=postgres://cab:cabpass@host.docker.internal:5432/auth-service_db \
+docker run -p 42102:4001 \
+  -e PORT=4001 \
+  -e DATABASE_URL=postgres://cab:cabpass@host.docker.internal:42130/auth-service_db \
   -e JWT_SECRET=dev-secret \
   auth-service
 ```

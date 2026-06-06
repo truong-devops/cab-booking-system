@@ -2,7 +2,7 @@ const axios = require('axios');
 const monitoring = require('../monitoring');
 const logger = require('../utils/logger');
 
-const baseURL = process.env.AI_BASE_URL || 'http://localhost:3013';
+const baseURL = process.env.AI_BASE_URL || 'http://ai-service:3013';
 const http = axios.create({ baseURL, timeout: Number(process.env.AI_REQUEST_TIMEOUT_MS || 1200) });
 
 class AiServiceError extends Error {

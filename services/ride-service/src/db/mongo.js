@@ -7,7 +7,7 @@ let indexesPromise = null;
 let cachedDbName = null;
 
 function resolveMongoUri() {
-  return process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/ride_service';
+  return process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://mongo:27017/ride_service';
 }
 
 function resolveDbName(uri) {

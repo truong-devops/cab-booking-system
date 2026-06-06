@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: cabpass
       POSTGRES_DB: auth-service_db
     ports:
-      - '5432:5432'
+      - '${POSTGRES_HOST_PORT:-42130}:5432'
     volumes:
       - auth_postgres_data:/var/lib/postgresql/data
 
@@ -14,7 +14,7 @@ services:
     build:
       context: .
     ports:
-      - '4001:4001'
+      - '${AUTH_SERVICE_HOST_PORT:-42102}:4001'
     environment:
       SERVICE_NAME: auth-service
       PORT: 4001

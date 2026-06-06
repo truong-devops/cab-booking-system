@@ -1,6 +1,6 @@
 const http = require('http');
 
-const services = [{ name: 'api-gateway', port: 3000 }];
+const services = [{ name: 'api-gateway', port: 42100 }];
 
 function check({ name, port }) {
   return new Promise((resolve) => {

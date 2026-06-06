@@ -14,7 +14,7 @@ Note: This service is internal. Do not expose a public port. Route traffic throu
 ## Environment
 
 - PORT (default: 3006)
-- REDIS_URL (default: redis://localhost:6379)
+- REDIS_URL (default: redis://redis:6379)
 - JWT_SECRET (required if validating bearer tokens)
 - INTERNAL_API_KEY (optional, for service-to-service calls via x-internal-key)
 - QUOTE_TTL_SEC (default: 300)
@@ -30,10 +30,12 @@ Example overrides:
 
 ## Local run
 
+Use `http://localhost:42100` through the API Gateway for normal pricing APIs. Direct service execution is only for local debugging.
+
 ```bash
 cd services/pricing-service
 npm install
-JWT_SECRET=dev-secret REDIS_URL=redis://localhost:6379 node src/server.js
+JWT_SECRET=dev-secret REDIS_URL=redis://localhost:42131 node src/server.js
 ```
 
 Health endpoints:

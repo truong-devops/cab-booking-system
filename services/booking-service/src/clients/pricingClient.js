@@ -7,7 +7,7 @@ const {
   buildCircuitOpenError
 } = require('./dependencyCircuitBreaker');
 
-const baseURL = process.env.PRICING_BASE_URL || 'http://localhost:3006';
+const baseURL = process.env.PRICING_BASE_URL || 'http://pricing-service:3006';
 const REQUEST_TIMEOUT_MS = Math.max(200, Number(process.env.PRICING_HTTP_TIMEOUT_MS || 1800));
 const http = axios.create({ baseURL, timeout: REQUEST_TIMEOUT_MS });
 const RETRY_MAX = Number(process.env.PRICING_HTTP_RETRY_MAX || 2);

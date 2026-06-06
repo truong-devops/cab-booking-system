@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_BASE_URL="http://localhost:3000"
+DEFAULT_BASE_URL="http://localhost:42100"
 BASE_URL="${1:-${BASE_URL:-$DEFAULT_BASE_URL}}"
 AUTO_BOOTSTRAP_INFRA="${AUTO_BOOTSTRAP_INFRA:-0}"
 UNIQ_TAG="$(date +%s)-$RANDOM"
@@ -26,7 +26,7 @@ Usage:
 
 Examples:
   ./scripts/test-level1-10cases.sh
-  ./scripts/test-level1-10cases.sh http://localhost:3000
+  ./scripts/test-level1-10cases.sh http://localhost:42100
 
 Notes:
   - Default BASE_URL: $DEFAULT_BASE_URL

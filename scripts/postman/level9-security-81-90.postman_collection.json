@@ -29,7 +29,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000"
+      "value": "http://localhost:42100"
     },
     {
       "key": "userPass",

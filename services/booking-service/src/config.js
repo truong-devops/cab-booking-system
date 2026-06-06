@@ -4,7 +4,7 @@ function toNumber(value, fallback) {
 }
 
 function normalizeBrokers(value) {
-  return String(value || 'localhost:29092')
+  return String(value || 'kafka:9092')
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
@@ -59,7 +59,7 @@ module.exports = {
     retryMaxDelayMs: toNumber(process.env.STARTUP_RETRY_MAX_DELAY_MS, 15000)
   },
   db: {
-    connectionString: process.env.DATABASE_URL || 'postgres://cab:cabpass@localhost:5432/booking-service_db',
+    connectionString: process.env.DATABASE_URL || 'postgres://cab:cabpass@postgres:5432/booking-service_db',
     maxPoolSize: toNumber(process.env.PGPOOL_MAX, 60),
     minPoolSize: toNumber(process.env.PGPOOL_MIN, 10),
     idleTimeoutMs: toNumber(process.env.PGPOOL_IDLE_TIMEOUT_MS, 10000),

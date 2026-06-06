@@ -11,9 +11,9 @@ docker compose --env-file .env -f infra/docker-compose.dev.yml -f infra/observab
 ### 2) Verify wiring
 
 ```bash
-curl -s http://localhost:9090/api/v1/status/config | rg -n "alertmanagers|alertmanager:9093"
+curl -s http://localhost:42191/api/v1/status/config | rg -n "alertmanagers|alertmanager:9093"
 curl -s http://localhost:9093/-/healthy
-curl -s http://localhost:9090/api/v1/rules | rg -n "ServiceDown|HighHttpErrorRate|PaymentFailureSpike|QueueBacklogHigh"
+curl -s http://localhost:42191/api/v1/rules | rg -n "ServiceDown|HighHttpErrorRate|PaymentFailureSpike|QueueBacklogHigh"
 ```
 
 ### 3) Force a test alert (without waiting metric conditions)
@@ -51,7 +51,7 @@ docker compose --env-file .env -f infra/docker-compose.dev.yml -f infra/observab
 Then check:
 
 ```bash
-curl -s http://localhost:9090/api/v1/alerts | rg -n "OTelCollectorScrapeMissing|firing"
+curl -s http://localhost:42191/api/v1/alerts | rg -n "OTelCollectorScrapeMissing|firing"
 ```
 
 Bring it back:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-AI_URL="${AI_URL:-http://localhost:3013}"
+AI_URL="${AI_URL:-http://localhost:42112}"
 AGENT_URL="${AGENT_URL:-$AI_URL/v1/ai/agent/select-driver}"
 PARALLEL_REQUESTS="${PARALLEL_REQUESTS:-20}"
 CURL_CONNECT_TIMEOUT="${CURL_CONNECT_TIMEOUT:-5}"

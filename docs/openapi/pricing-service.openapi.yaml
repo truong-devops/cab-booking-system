@@ -6,9 +6,9 @@ info:
     Pricing service for quotes and fare finalization.
     Auth: JWT bearer OR internal key (x-internal-key).
 servers:
-  - url: http://localhost:3006
-    description: Direct pricing-service
-  - url: http://localhost:3000
+  - url: http://localhost:42106
+    description: Direct debug-only pricing-service
+  - url: http://localhost:42100
     description: API Gateway (prefix /v1/pricing)
 components:
   securitySchemes:

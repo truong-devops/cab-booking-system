@@ -21,19 +21,21 @@ This inventory is derived from code in the repository (routes/controllers/middle
 
 ## Gateway Domain Mapping
 
+The gateway calls upstream services through internal service DNS and internal ports. For normal local access from your machine, call the gateway at `http://localhost:42100`; direct `421xx` service ports are debug-only shortcuts from `infra/docker-compose.dev.yml`.
+
 | Gateway Domain                      | Upstream Service     | Upstream Base                | Notes                                                       |
 | ----------------------------------- | -------------------- | ---------------------------- | ----------------------------------------------------------- |
-| auth                                | auth-service         | `http://localhost:4001/auth` | `DOMAIN_PREFIX_MAP` rewrites `/v1/auth/*` → `/auth/*`       |
-| bookings                            | booking-service      | `http://localhost:3003`      | Pass-through                                                |
-| driver / drivers / admin / internal | driver-service       | `http://localhost:3003`      | Pass-through                                                |
-| eta                                 | eta-service          | `http://localhost:3012`      | Pass-through                                                |
-| places                              | places-service       | `http://localhost:3014`      | Pass-through                                                |
-| notifications                       | notification-service | `http://localhost:3010`      | `/v1/notifications/users/*` rewrites to `/v1/users/*`       |
-| payments                            | payment-service      | `http://localhost:3007`      | Pass-through                                                |
-| pricing                             | pricing-service      | `http://localhost:3006`      | Pass-through                                                |
-| reviews                             | review-service       | `http://localhost:3009`      | Pass-through                                                |
-| rides                               | ride-service         | `http://localhost:3005`      | Pass-through                                                |
-| users                               | user-service         | `http://localhost:4004`      | Pass-through (internal endpoints not reachable via gateway) |
+| auth                                | auth-service         | `http://auth-service:4001`   | `/v1/auth/*` rewrites to `/auth/*`                          |
+| bookings                            | booking-service      | `http://booking-service:3003` | Pass-through                                                |
+| driver / drivers / admin / internal | driver-service       | `http://driver-service:3011` | Pass-through                                                |
+| eta                                 | eta-service          | `http://eta-service:3012`    | Pass-through                                                |
+| places                              | places-service       | `http://places-service:3014` | Pass-through                                                |
+| notifications                       | notification-service | `http://notification-service:3010` | `/v1/notifications/users/*` rewrites to `/v1/users/*` |
+| payments                            | payment-service      | `http://payment-service:3007` | Pass-through                                                |
+| pricing                             | pricing-service      | `http://pricing-service:3006` | Pass-through                                                |
+| reviews                             | review-service       | `http://review-service:3009` | Pass-through                                                |
+| rides                               | ride-service         | `http://ride-service:3005`   | Pass-through                                                |
+| users                               | user-service         | `http://user-service:4004`   | Pass-through (internal endpoints not reachable via gateway) |
 
 ## Endpoint Inventory (Service → Endpoint → Auth → Models)
 

@@ -164,5 +164,5 @@ docker compose -f scripts/postman-truong/k6/docker-compose.k6.yml run --rm k6 ru
 ## 6) Lưu ý vận hành
 
 - Một số case trong collection `partial` được ghi rõ là `Manual Evidence`.
-- Với `https://localhost:3443`, nếu cert self-signed thì tắt SSL verification trong Postman hoặc import cert dev.
+- Với `https://localhost:42101`, nếu cert self-signed thì tắt SSL verification trong Postman hoặc import cert dev.
 - Nếu chạy theo docker compose dev của repo, port mặc định phù hợp với environment đã tạo.

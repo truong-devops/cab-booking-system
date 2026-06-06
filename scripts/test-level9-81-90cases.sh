@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_BASE_URL="http://localhost:3000"
+DEFAULT_BASE_URL="http://localhost:42100"
 BASE_URL="${1:-${BASE_URL:-$DEFAULT_BASE_URL}}"
 USER_PASS="${USER_PASS:-123456}"
 UNIQ_TAG="$(date +%s)-$RANDOM"
@@ -48,7 +48,7 @@ Usage:
 
 Examples:
   ./scripts/test-level9-81-90cases.sh
-  ./scripts/test-level9-81-90cases.sh http://localhost:3000
+  ./scripts/test-level9-81-90cases.sh http://localhost:42100
 
 Notes:
   - Default BASE_URL: $DEFAULT_BASE_URL
@@ -535,7 +535,7 @@ if ensure_gateway_ready "85"; then
     mark_no_evidence_fail "85" "cannot run booking rate-limit test without authenticated user token"
   else
     C85_RESULT=$(BASE_URL="$BASE_URL" CASE85_TARGET_PATH="$CASE85_TARGET_PATH" USER_TOKEN="$USER_TOKEN" CASE85_BURST_COUNT="$CASE85_BURST_COUNT" CASE85_CONCURRENCY="$CASE85_CONCURRENCY" CASE85_MAX_TIME_MS="$CASE85_MAX_TIME_MS" node - <<'NODE'
-const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+const baseUrl = process.env.BASE_URL || 'http://localhost:42100';
 const path = process.env.CASE85_TARGET_PATH || '/v1/bookings';
 const token = process.env.USER_TOKEN || '';
 const total = Number(process.env.CASE85_BURST_COUNT || 1400);

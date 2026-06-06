@@ -1,7 +1,14 @@
 import { apiRequest, isMock } from './api.service.js';
 import { mockUser } from './mock.data.js';
 
-const AUTH_BASE_URL = import.meta.env.VITE_AUTH_SERVICE_URL || 'http://localhost:4001';
+function resolveApiBaseUrl() {
+  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL;
+  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin;
+  return '';
+}
+
+const GATEWAY_BASE_URL = resolveApiBaseUrl().replace(/\/+$/, '');
+const AUTH_BASE_URL = (import.meta.env.VITE_AUTH_SERVICE_URL || GATEWAY_BASE_URL).replace(/\/+$/, '');
 
 function toDirectAuthUrl(path) {
   const base = String(AUTH_BASE_URL || '').replace(/\/+$/, '');
@@ -24,7 +31,7 @@ function withNetworkContext(error) {
     return error;
   }
 
-  const gatewayBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  const gatewayBase = GATEWAY_BASE_URL;
   const err = new Error(`Khong ket noi duoc backend. Kiem tra API Gateway (${gatewayBase}) hoac AUTH service (${AUTH_BASE_URL}).`);
   err.status = 0;
   err.payload = error?.payload || null;

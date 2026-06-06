@@ -1098,21 +1098,21 @@ func buildAuthHTTPClient() *http.Client {
 
 func loadConfig() config {
 	serviceURLs := map[string]string{
-		"rides":         envOrDefault("RIDE_SERVICE_URL", "http://localhost:3005"),
-		"users":         envOrDefault("USER_SERVICE_URL", "http://localhost:3002"),
-		"driver":        envOrDefault("DRIVER_SERVICE_URL", "http://localhost:3011"),
-		"drivers":       envOrDefault("DRIVER_SERVICE_URL", "http://localhost:3011"),
-		"internal":      envOrDefault("DRIVER_SERVICE_URL", "http://localhost:3011"),
-		"admin":         envOrDefault("DRIVER_SERVICE_URL", "http://localhost:3011"),
-		"bookings":      envOrDefault("BOOKING_SERVICE_URL", "http://localhost:3003"),
-		"eta":           envOrDefault("ETA_SERVICE_URL", "http://localhost:3012"),
-		"places":        envOrDefault("PLACES_SERVICE_URL", "http://localhost:3014"),
-		"pricing":       envOrDefault("PRICING_SERVICE_URL", "http://localhost:3006"),
-		"ai":            envOrDefault("AI_SERVICE_URL", "http://localhost:3013"),
-		"payments":      envOrDefault("PAYMENT_SERVICE_URL", "http://localhost:3007"),
-		"reviews":       envOrDefault("REVIEW_SERVICE_URL", "http://localhost:3009"),
-		"auth":          envOrDefault("AUTH_SERVICE_URL", "http://localhost:4001"),
-		"notifications": envOrDefault("NOTIFICATION_SERVICE_URL", "http://localhost:3010"),
+		"rides":         envOrDefault("RIDE_SERVICE_URL", "http://ride-service:3005"),
+		"users":         envOrDefault("USER_SERVICE_URL", "http://user-service:4004"),
+		"driver":        envOrDefault("DRIVER_SERVICE_URL", "http://driver-service:3011"),
+		"drivers":       envOrDefault("DRIVER_SERVICE_URL", "http://driver-service:3011"),
+		"internal":      envOrDefault("DRIVER_SERVICE_URL", "http://driver-service:3011"),
+		"admin":         envOrDefault("DRIVER_SERVICE_URL", "http://driver-service:3011"),
+		"bookings":      envOrDefault("BOOKING_SERVICE_URL", "http://booking-service:3003"),
+		"eta":           envOrDefault("ETA_SERVICE_URL", "http://eta-service:3012"),
+		"places":        envOrDefault("PLACES_SERVICE_URL", "http://places-service:3014"),
+		"pricing":       envOrDefault("PRICING_SERVICE_URL", "http://pricing-service:3006"),
+		"ai":            envOrDefault("AI_SERVICE_URL", "http://ai-service:3013"),
+		"payments":      envOrDefault("PAYMENT_SERVICE_URL", "http://payment-service:3007"),
+		"reviews":       envOrDefault("REVIEW_SERVICE_URL", "http://review-service:3009"),
+		"auth":          envOrDefault("AUTH_SERVICE_URL", "http://auth-service:4001"),
+		"notifications": envOrDefault("NOTIFICATION_SERVICE_URL", "http://notification-service:3010"),
 	}
 
 	return config{

@@ -5,9 +5,9 @@ info:
   description: |
     Review service for submitting, listing, updating, and deleting ride reviews.
 servers:
-  - url: http://localhost:3009
-    description: Direct review-service
-  - url: http://localhost:3000
+  - url: http://localhost:42108
+    description: Direct debug-only review-service
+  - url: http://localhost:42100
     description: API Gateway (prefix /v1/reviews)
 components:
   securitySchemes:

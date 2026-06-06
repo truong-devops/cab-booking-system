@@ -6,11 +6,15 @@ function inferApiBaseUrl() {
     return fromEnv.trim().replace(/\/+$/, '');
   }
 
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin.replace(/\/+$/, '');
+  }
+
   // Fallback: use host from Expo dev server (LAN/tunnel)
   const hostUri = Constants.expoConfig?.hostUri || '';
   const host = hostUri.split(':')[0];
   if (host) {
-    return `http://${host}:3000`;
+    return `http://${host}:42100`;
   }
 
   return '';

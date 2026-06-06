@@ -72,12 +72,12 @@ function collection(name, description, items, variables = []) {
       "pm.collectionVariables.set('driverEmail', 'postman-driver-' + uniq + '@test.com');"
     ]),
     variable: [
-      { key: 'baseUrl', value: 'http://localhost:3000' },
-      { key: 'aiUrl', value: 'http://localhost:3013' },
-      { key: 'etaUrl', value: 'http://localhost:3012' },
-      { key: 'pricingUrl', value: 'http://localhost:3006' },
-      { key: 'bookingUrl', value: 'http://localhost:3002' },
-      { key: 'paymentUrl', value: 'http://localhost:3005' },
+      { key: 'baseUrl', value: 'http://localhost:42100' },
+      { key: 'aiUrl', value: 'http://localhost:42112' },
+      { key: 'etaUrl', value: 'http://localhost:42111' },
+      { key: 'pricingUrl', value: 'http://localhost:42106' },
+      { key: 'bookingUrl', value: 'http://localhost:42104' },
+      { key: 'paymentUrl', value: 'http://localhost:42107' },
       { key: 'internalApiKey', value: 'dev-internal-key' },
       { key: 'userPass', value: '123456' },
       { key: 'uniq', value: '' },
@@ -332,7 +332,7 @@ write('level7-61-70.postman_collection.json', collection(
       request('70 Autoscale Target Sample', 'POST', '{{case70AutoscaleTargetUrl}}', { body: '{"pickup":{"lat":10.76,"lng":106.66},"drop":{"lat":10.77,"lng":106.70},"vehicleType":"CAR"}', event: no5xx(), description: 'Set case70AutoscaleTargetUrl to the same target URL used by the shell script.' })
     ] }
   ],
-  [{ key: 'quoteId', value: '' }, { key: 'case70AutoscaleTargetUrl', value: 'http://localhost:3002/v1/bookings' }]
+  [{ key: 'quoteId', value: '' }, { key: 'case70AutoscaleTargetUrl', value: 'http://localhost:42104/v1/bookings' }]
 ));
 
 write('level8-71-80.postman_collection.json', collection(
@@ -372,12 +372,12 @@ write('level10-91-100.postman_collection.json', collection(
       request('97 Direct Booking Service No Auth', 'POST', '{{bookingUrl}}/v1/bookings', { body: bookingPayload, event: basicStatus(401, 403, 404) }),
       request('97 Direct Booking Service With User Token', 'POST', '{{bookingUrl}}/v1/bookings', { headers: [bearer('userToken')], body: bookingPayload, event: basicStatus(401, 403, 404) }),
       request('98 Auth Login Rate Limit Sample', 'POST', '{{baseUrl}}/v1/auth/login', { body: '{"identifier":"rate-limit-user@test.com","password":"wrong-pass"}', event: no5xx(), description: 'Run in Collection Runner for a rough 429 check; shell script is authoritative.' }),
-      request('99 HTTPS Health Probe', 'GET', '{{httpsBaseUrl}}/health', { event: basicStatus(200), description: 'Set httpsBaseUrl to the TLS endpoint, e.g. https://localhost:3443. Postman cannot prove HTTPS-only redirect policy by itself.' }),
+      request('99 HTTPS Health Probe', 'GET', '{{httpsBaseUrl}}/health', { event: basicStatus(200), description: 'Set httpsBaseUrl to the TLS endpoint, e.g. https://localhost:42101. Postman cannot prove HTTPS-only redirect policy by itself.' }),
       request('100 Login With Audit Trace', 'POST', '{{baseUrl}}/v1/auth/login', { headers: [['x-trace-id', 'audit-login-{{uniq}}'], ['x-force-audit-log', '1']], body: '{"identifier":"{{userEmail}}","password":"{{userPass}}"}', event: basicStatus(200) }),
       request('100 API With Audit Trace', 'GET', '{{baseUrl}}/v1/bookings', { headers: [bearer('userToken'), ['x-trace-id', 'audit-api-{{uniq}}'], ['x-force-audit-log', '1']], event: basicStatus(200, 204) })
     ] }
   ],
-  [{ key: 'expiredToken', value: 'replace-with-expired-jwt' }, { key: 'httpsBaseUrl', value: 'https://localhost:3443' }]
+  [{ key: 'expiredToken', value: 'replace-with-expired-jwt' }, { key: 'httpsBaseUrl', value: 'https://localhost:42101' }]
 ));
 
 console.log('Generated Postman collections in', outDir);

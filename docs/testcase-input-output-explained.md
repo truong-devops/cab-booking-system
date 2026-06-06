@@ -4,8 +4,8 @@ Tai lieu nay tom tat bo test trong `scripts/postman/*.postman_collection.json` v
 
 ## Cach Doc Chung
 
-- `baseUrl`: API Gateway, mac dinh `http://localhost:3000`.
-- `aiUrl`, `etaUrl`, `pricingUrl`, `bookingUrl`: goi truc tiep service khi test hieu nang/noi bo. Luu y trong Postman `bookingUrl` dang de `http://localhost:3002`, trong docker-compose va gateway hien tai booking-service la `3003`.
+- `baseUrl`: API Gateway, mac dinh `http://localhost:42100`. Day la URL chinh nen dung cho app, Postman va test binh thuong.
+- `aiUrl`, `etaUrl`, `pricingUrl`, `bookingUrl`: chi goi truc tiep service tu may host khi test hieu nang/noi bo hoac debug. Docker network van dung port noi bo cua service, vi du booking-service la `3003`.
 - Cac bien `{{userToken}}`, `{{adminToken}}`, `{{driverToken}}` duoc lay sau request login.
 - Output trong bang la output ky vong cua test: status HTTP, field quan trong, hoac tinh chat can dam bao.
 

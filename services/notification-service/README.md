@@ -24,12 +24,12 @@ Contract: /contracts/openapi/notification-service.yaml
 
 ### MongoDB
 
-- `MONGODB_URI` (default: mongodb://localhost:27017/notification_service)
+- `MONGODB_URI` (default: mongodb://mongo:27017/notification_service)
 - `MONGODB_DB` (optional override)
 
 ### User-service integration
 
-- `USER_SERVICE_BASE_URL` (default: http://localhost:4004)
+- `USER_SERVICE_BASE_URL` (default: http://user-service:4004)
 - `INTERNAL_API_KEY` (required to call /internal/users/:id)
 - `USER_SERVICE_TIMEOUT_MS` (default: 2000)
 - `USER_SERVICE_RETRY` (default: 1)
@@ -45,12 +45,14 @@ Contract: /contracts/openapi/notification-service.yaml
 
 ## Run locally
 
+Use `http://localhost:42100` through the API Gateway for normal notification APIs. The direct `42109` port below is only for standalone local debugging.
+
 ```bash
 npm install
-PORT=3010 \
-MONGODB_URI=mongodb://localhost:27017/notification_service \
+PORT=42109 \
+MONGODB_URI=mongodb://localhost:42132/notification_service \
 AUTH_JWT_SECRET=dev-secret \
-USER_SERVICE_BASE_URL=http://localhost:4004 \
+USER_SERVICE_BASE_URL=http://localhost:42103 \
 INTERNAL_API_KEY=dev-internal-key \
 npm start
 ```
@@ -91,7 +93,7 @@ npm start
 ### Ride-service: RIDE_ASSIGNED (PUSH + IN_APP)
 
 ```bash
-curl -X POST http://localhost:3010/v1/notifications \
+curl -X POST http://localhost:42109/v1/notifications \
   -H "Authorization: Bearer <JWT>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -109,7 +111,7 @@ curl -X POST http://localhost:3010/v1/notifications \
 ### Payment-service: PAYMENT_FAILED (SMS + IN_APP)
 
 ```bash
-curl -X POST http://localhost:3010/v1/notifications \
+curl -X POST http://localhost:42109/v1/notifications \
   -H "Authorization: Bearer <JWT>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -128,7 +130,7 @@ curl -X POST http://localhost:3010/v1/notifications \
 ### Batch send
 
 ```bash
-curl -X POST http://localhost:3010/v1/notifications/batch \
+curl -X POST http://localhost:42109/v1/notifications/batch \
   -H "Authorization: Bearer <JWT>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -157,14 +159,14 @@ curl -X POST http://localhost:3010/v1/notifications/batch \
 ### User notifications
 
 ```bash
-curl -X GET "http://localhost:3010/v1/users/u_customer_1/notifications?status=PENDING&limit=20" \
+curl -X GET "http://localhost:42109/v1/users/u_customer_1/notifications?status=PENDING&limit=20" \
   -H "Authorization: Bearer <JWT>"
 ```
 
 ### Preferences
 
 ```bash
-curl -X PUT http://localhost:3010/v1/users/u_customer_1/preferences \
+curl -X PUT http://localhost:42109/v1/users/u_customer_1/preferences \
   -H "Authorization: Bearer <JWT>" \
   -H "Content-Type: application/json" \
   -d '{"channels":{"EMAIL":false,"SMS":false,"PUSH":true,"IN_APP":true}}'
