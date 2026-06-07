@@ -1,4 +1,5 @@
 process.env.JWT_ACCESS_SECRET = 'test_secret';
+process.env.INTERNAL_API_KEY = 'dev-internal-key';
 
 const request = require('supertest');
 const jwt = require('jsonwebtoken');

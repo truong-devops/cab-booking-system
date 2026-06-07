@@ -17,5 +17,5 @@ RUN sh -c 'for i in 1 2 3; do npm install && exit 0; echo "npm install failed (a
 COPY libs ./libs
 COPY services/api-gateway/src ./src
 
-EXPOSE 8080
+EXPOSE 3000
 CMD ["npm", "run", "start"]

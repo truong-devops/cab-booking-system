@@ -17,4 +17,5 @@ RUN sh -c 'for i in 1 2 3; do npm install --omit=dev --workspaces --include-work
 
 COPY services/ai-service ./services/ai-service
 WORKDIR /app/services/ai-service
+EXPOSE 3013
 CMD ["node", "src/server.js"]

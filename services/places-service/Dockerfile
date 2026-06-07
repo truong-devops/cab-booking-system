@@ -15,4 +15,5 @@ RUN sh -c 'for i in 1 2 3; do npm install --omit=dev && exit 0; echo "npm instal
 
 COPY services/places-service/src ./src
 
+EXPOSE 3014
 CMD ["node", "src/server.js"]

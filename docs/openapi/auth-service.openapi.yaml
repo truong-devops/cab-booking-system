@@ -186,7 +186,7 @@ paths:
   /auth/register:
     post:
       summary: Register user
-      description: Create a new user (email or username required). Returns user data and tokens.
+      description: Create a new user (email or username required). Returns user data and tokens. Public self-registration is limited by AUTH_PUBLIC_REGISTER_ROLES and must not include privileged roles in shared environments.
       requestBody:
         required: true
         content:

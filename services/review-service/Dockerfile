@@ -18,4 +18,5 @@ RUN sh -c 'for i in 1 2 3; do npm install --omit=dev --workspaces --include-work
 
 COPY services/review-service ./services/review-service
 WORKDIR /app/services/review-service
+EXPOSE 3009
 CMD ["node", "src/server.js"]

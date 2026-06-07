@@ -134,7 +134,8 @@ const config = {
   auth: {
     jwtAccessSecret: process.env.JWT_ACCESS_SECRET || process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET || ''
   },
-  internalApiKey: process.env.INTERNAL_API_KEY || 'dev-internal-key'
+  internalApiKey:
+    process.env.INTERNAL_API_KEY || (process.env.NODE_ENV === 'production' ? '' : 'dev-internal-key')
 };
 
 module.exports = config;

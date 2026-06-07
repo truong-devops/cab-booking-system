@@ -18,5 +18,5 @@ COPY libs ./libs
 COPY services/user-service/src ./src
 COPY services/user-service/migrations ./migrations
 
-EXPOSE 4002
+EXPOSE 4004
 CMD ["npm", "run", "start"]

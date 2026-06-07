@@ -256,9 +256,11 @@ Before deploying to a shared staging or production environment:
 5. Replace local PostgreSQL, MongoDB, Redis, and Kafka containers with highly available managed or clustered deployments with backups and recovery procedures.
 6. Run service migrations as an explicit deployment job before starting new application versions. Do not rely on local seed scripts.
 7. Deploy multiple stateless service replicas, configure readiness/liveness probes, and set resource requests, limits, autoscaling, and disruption policies.
-8. Deploy `places-service` separately if place search is required, because it is not present in `infra/docker-compose.pro.yml`.
+8. Configure `places-service` provider settings and usage policy if place search is required.
 9. Configure external payment providers, verified PayOS webhooks, alert receivers, retention policies, dashboards, and incident runbooks.
 10. Keep demo credentials, seed data, self-signed certificates, mock realtime servers, and tracked local `.env` values out of production.
+
+`infra/docker-compose.pro.yml` intentionally fails fast when required deployment secrets are missing. Use `infra/env/pro.required.example.env` as the checklist for secret managers or deployment-specific env files; do not use the local root `.env` for production compose. Production Compose uses schema-only Postgres/Mongo init files and does not mount local demo seed data.
 
 For Kubernetes or another orchestrator, use the service boundaries and environment variables in the Compose files as the deployment mapping, then add managed secrets, service discovery, autoscaling, health probes, and network policies.
 
@@ -280,7 +282,7 @@ Important configuration groups:
 | Places            | `PLACES_PROVIDER_*`                                                                           |
 | Observability     | `OTEL_EXPORTER_OTLP_ENDPOINT`, `DEPLOY_ENV`, `LOGSTASH_SYSLOG_HOST`, alert receiver variables |
 
-Compose provides insecure local defaults for several values. Override them through the environment or a deployment-specific env file.
+Development Compose provides insecure local defaults for several values. Production Compose requires secrets, database credentials, Redis/Mongo credentials, payment provider credentials, payment callback URLs, and real VietQR account details through the environment or a deployment-specific env file.
 
 ## Observability
 
