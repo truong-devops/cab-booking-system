@@ -7,7 +7,7 @@ Auth microservice using Express + PostgreSQL.
 - Register / Login / Refresh / Logout
 - JWT access token + refresh token
 - Bcrypt password hashing
-- Basic role support (user/admin/driver)
+- Basic role support (user/admin/ops/driver)
 - Token verification endpoint for API Gateway
 
 ## Environment
@@ -18,7 +18,9 @@ Auth microservice using Express + PostgreSQL.
 - `JWT_EXPIRES_IN` (default: `15m`)
 - `REFRESH_TOKEN_TTL_DAYS` (default: `7`)
 - `BCRYPT_ROUNDS` (default: `10`)
-- `AUTH_ROLES` (default: `user,admin,driver`)
+- `AUTH_ROLES` (default: `user,admin,ops,driver`)
+- `AUTH_PUBLIC_REGISTER_ROLES` (default: `user,driver`; do not include `admin` or `ops` in shared environments)
+- `DEV_MAGIC_PASSWORD` (optional local-only login bypass; disabled in `NODE_ENV=production` and disabled by default)
 
 ## Database
 

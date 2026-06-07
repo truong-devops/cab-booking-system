@@ -18,4 +18,5 @@ RUN sh -c 'for i in 1 2 3; do npm install --omit=dev --workspaces --include-work
 
 COPY services/pricing-service ./services/pricing-service
 WORKDIR /app/services/pricing-service
+EXPOSE 3006
 CMD ["node", "src/server.js"]

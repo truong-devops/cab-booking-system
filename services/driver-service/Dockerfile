@@ -18,4 +18,5 @@ RUN sh -c 'for i in 1 2 3; do npm install --omit=dev --workspaces --include-work
 
 COPY services/driver-service ./services/driver-service
 WORKDIR /app/services/driver-service
+EXPOSE 3011
 CMD ["node", "src/server.js"]

@@ -20,4 +20,5 @@ RUN sh -c 'for i in 1 2 3; do npm install --omit=dev --workspaces --include-work
 COPY services/booking-service ./services/booking-service
 
 WORKDIR /app/services/booking-service
+EXPOSE 3003
 CMD ["node", "src/server.js"]

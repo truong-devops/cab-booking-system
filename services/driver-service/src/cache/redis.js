@@ -1,7 +1,9 @@
 const Redis = require('ioredis');
 const monitoring = require('../monitoring');
 
-const redis = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
+const redis = new Redis(process.env.REDIS_URL || 'redis://redis:6379', {
+  lazyConnect: process.env.NODE_ENV === 'test'
+});
 
 function wrapCommand(method, operation = method) {
   if (typeof redis[method] !== 'function') {

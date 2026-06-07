@@ -165,7 +165,7 @@ function buildHeaders({ authorization, traceId }) {
   if (authorization) {
     headers.authorization = authorization;
   }
-  const internalKey = process.env.INTERNAL_API_KEY || 'dev-internal-key';
+  const internalKey = process.env.INTERNAL_API_KEY || (process.env.NODE_ENV === 'production' ? '' : 'dev-internal-key');
   if (internalKey) {
     headers['x-internal-key'] = internalKey;
   }
