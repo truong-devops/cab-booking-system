@@ -45,6 +45,8 @@ jest.mock('../src/services/driverService', () => ({
 }));
 
 const app = require('../src/app');
+const redis = require('../src/cache/redis');
+const pool = require('../src/db/pool');
 const driverService = require('../src/services/driverService');
 
 function signToken(payload) {
@@ -55,6 +57,11 @@ function signToken(payload) {
 describe('driver-service routes (smoke)', () => {
   beforeAll(() => {
     process.env.AUTH_JWT_SECRET = 'test-secret';
+  });
+
+  afterAll(async () => {
+    redis.disconnect();
+    await pool.end();
   });
 
   test('driver online + location', async () => {

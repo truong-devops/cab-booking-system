@@ -19,4 +19,5 @@ RUN sh -c 'for i in 1 2 3; do npm install --omit=dev --workspaces --include-work
 
 COPY services/ride-service ./services/ride-service
 WORKDIR /app/services/ride-service
+EXPOSE 3005
 CMD ["node", "src/server.js"]

@@ -1,5 +1,9 @@
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+
 services:
   zookeeper:
+    <<: *service-defaults
     image: zookeeper:3.9-jre-17
     environment:
       ZOO_TICK_TIME: 2000
@@ -7,6 +11,7 @@ services:
       - backend
 
   kafka:
+    <<: *service-defaults
     image: confluentinc/cp-kafka:7.6.1
     depends_on:
       - zookeeper
@@ -28,13 +33,28 @@ services:
       - backend
 
   redis:
+    <<: *service-defaults
     image: redis:7-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     volumes:
       - cab_redis_data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - backend
 
   api-gateway:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/api-gateway/Dockerfile
@@ -43,10 +63,11 @@ services:
       - '${API_GATEWAY_HTTPS_HOST_PORT:-42101}:3443'
     environment:
       SERVICE_NAME: api-gateway
+      NODE_ENV: production
       OTEL_SERVICE_NAME: api-gateway
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3000
-      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       AUTH_SERVICE_URL: http://auth-service:4001
       BOOKING_SERVICE_URL: http://booking-service:3003
       DRIVER_SERVICE_URL: http://driver-service:3011
@@ -61,7 +82,7 @@ services:
       USER_SERVICE_URL: http://user-service:4004
       PROXY_TIMEOUT_MS: 30000
       PROXY_RETRY_BACKOFF_MS: 100
-      GATEWAY_HTTPS_ENABLED: ${GATEWAY_HTTPS_ENABLED:-true}
+      GATEWAY_HTTPS_ENABLED: ${GATEWAY_HTTPS_ENABLED:-false}
       HTTPS_PORT: ${HTTPS_PORT:-3443}
       HTTPS_CERT_PATH: ${HTTPS_CERT_PATH:-/app/src/certs/dev-gateway.crt}
       HTTPS_KEY_PATH: ${HTTPS_KEY_PATH:-/app/src/certs/dev-gateway.key}
@@ -82,32 +103,37 @@ services:
       - backend
 
   auth-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/auth-service/Dockerfile
     environment:
       SERVICE_NAME: auth-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: auth-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 4001
-      DATABASE_URL: postgres://cab:cabpass@postgres:5432/auth-service_db
-      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/auth-service_db
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      AUTH_PUBLIC_REGISTER_ROLES: ${AUTH_PUBLIC_REGISTER_ROLES:-user,driver}
     depends_on:
       - postgres
     networks:
       - backend
 
   user-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/user-service/Dockerfile
     environment:
       SERVICE_NAME: user-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: user-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 4004
-      DATABASE_URL: postgres://cab:cabpass@postgres:5432/user-service_db
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+      DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/user-service_db
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       - postgres
@@ -115,16 +141,18 @@ services:
       - backend
 
   ride-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/ride-service/Dockerfile
     environment:
       SERVICE_NAME: ride-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: ride-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3005
-      MONGODB_URI: mongodb://mongo:27017/ride_service
-      REDIS_URL: redis://redis:6379
+      MONGODB_URI: mongodb://${MONGO_APP_USERNAME:?MONGO_APP_USERNAME is required}:${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required}@mongo:27017/ride_service?authSource=ride_service
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
       KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
       KAFKA_CONSUMER_GROUP_ID: ride-service-group
       KAFKA_CONSUMER_PARTITIONS_CONCURRENCY: 1
@@ -157,7 +185,7 @@ services:
       INBOX_RETRY_BASE_MS: 1000
       INBOX_RETRY_MAX_MS: 60000
       INBOX_PROCESSING_TIMEOUT_MS: 300000
-      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
       - mongo
       - redis
@@ -166,15 +194,17 @@ services:
       - backend
 
   booking-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/booking-service/Dockerfile
     environment:
       SERVICE_NAME: booking-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: booking-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3003
-      DATABASE_URL: postgres://cab:cabpass@postgres:5432/booking-service_db
+      DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/booking-service_db
       KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
       KAFKA_CONSUME_TOPICS: payment.completed,payment.failed
       KAFKA_CONSUMER_GROUP_ID: booking-service-group
@@ -206,7 +236,12 @@ services:
       PAYMENT_REQUEST_TIMEOUT_MS: 5000
       PAYMENT_HTTP_RETRY_MAX: 2
       PAYMENT_HTTP_RETRY_BACKOFF_MS: 150
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      BOOKING_LOAD_MINIMAL_RESPONSE: 'false'
+      BOOKING_LOAD_SKIP_PERSIST: 'false'
+      BOOKING_LOAD_SKIP_LIST_DB: 'false'
+      BOOKING_LOAD_SKIP_ACTIVE_CHECK: 'false'
+      BOOKING_LOAD_ULTRA_FAST_PATH: 'false'
     depends_on:
       - kafka
       - postgres
@@ -216,25 +251,29 @@ services:
       - backend
 
   eta-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/eta-service/Dockerfile
     environment:
       SERVICE_NAME: eta-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: eta-service
       PORT: 3012
     networks:
       - backend
 
   places-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/places-service/Dockerfile
     environment:
       SERVICE_NAME: places-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: places-service
       PORT: 3014
-      DATABASE_URL: postgres://cab:cabpass@postgres:5432/places-service_db
+      DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/places-service_db
       PLACES_PROVIDER_ENABLED: ${PLACES_PROVIDER_ENABLED:-true}
       PLACES_PROVIDER_BASE_URL: ${PLACES_PROVIDER_BASE_URL:-https://nominatim.openstreetmap.org}
       PLACES_PROVIDER_TIMEOUT_MS: ${PLACES_PROVIDER_TIMEOUT_MS:-1800}
@@ -245,28 +284,33 @@ services:
       - backend
 
   ai-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/ai-service/Dockerfile
     environment:
       SERVICE_NAME: ai-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: ai-service
       PORT: 3013
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
     networks:
       - backend
 
   driver-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/driver-service/Dockerfile
     environment:
       SERVICE_NAME: driver-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: driver-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3011
-      DATABASE_URL: postgres://cab:cabpass@postgres:5432/driver-service_db
-      REDIS_URL: redis://redis:6379
-      AUTH_JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/driver-service_db
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      AUTH_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
       - postgres
       - redis
@@ -274,18 +318,20 @@ services:
       - backend
 
   notification-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/notification-service/Dockerfile
     environment:
       SERVICE_NAME: notification-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: notification-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3010
-      MONGODB_URI: mongodb://mongo:27017/notification_service
+      MONGODB_URI: mongodb://${MONGO_APP_USERNAME:?MONGO_APP_USERNAME is required}:${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required}@mongo:27017/notification_service?authSource=notification_service
       USER_SERVICE_BASE_URL: http://user-service:4004
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
-      AUTH_JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      AUTH_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
       - mongo
       - user-service
@@ -293,17 +339,19 @@ services:
       - backend
 
   pricing-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/pricing-service/Dockerfile
     environment:
       SERVICE_NAME: pricing-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: pricing-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3006
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-dev-secret}
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
       COUPON_DISCOUNTS_JSON: '{"WELCOME10":10000,"VIP20":20000,"OFF50":50000}'
       RATES_JSON: '{"STANDARD":{"surgeMultiplier":1.1},"PREMIUM":{"surgeMultiplier":1.3}}'
     depends_on:
@@ -312,17 +360,19 @@ services:
       - backend
 
   payment-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/payment-service/Dockerfile
     environment:
       SERVICE_NAME: payment-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: payment-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3007
-      DATABASE_URL: postgres://cab:cabpass@postgres:5432/payment-service_db
-      REDIS_URL: redis://redis:6379
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+      DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/payment-service_db
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
       KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
       KAFKA_CONSUME_TOPICS: ride.created,ride.assigned,ride.cancelled
       KAFKA_CONSUMER_GROUP_ID: payment-service-group
@@ -352,24 +402,24 @@ services:
       OUTBOX_RETRY_BASE_MS: 1000
       OUTBOX_RETRY_MAX_MS: 60000
       OUTBOX_PROCESSING_TIMEOUT_MS: 300000
-      JWT_ACCESS_SECRET: ${JWT_SECRET:-dev-secret}
+      JWT_ACCESS_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
 
       VIETQR_API_URL: ${VIETQR_API_URL:-https://api.vietqr.io/v2/generate}
-      VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-970418}
-      VIETQR_ACCOUNT_NUMBER: ${VIETQR_ACCOUNT_NUMBER:-123456789}
-      VIETQR_ACCOUNT_NAME: '${VIETQR_ACCOUNT_NAME:-NGUYEN VAN A}'
+      VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:?VIETQR_BANK_BIN is required}
+      VIETQR_ACCOUNT_NUMBER: ${VIETQR_ACCOUNT_NUMBER:?VIETQR_ACCOUNT_NUMBER is required}
+      VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:?VIETQR_ACCOUNT_NAME is required}
       VIETQR_MERCHANT_CITY: '${VIETQR_MERCHANT_CITY:-HO CHI MINH}'
       VIETQR_FORMAT: ${VIETQR_FORMAT:-text}
       VIETQR_CLIENT_ID: ${VIETQR_CLIENT_ID:-}
       VIETQR_API_KEY: ${VIETQR_API_KEY:-}
       VIETQR_EXPIRES_IN_MINUTES: ${VIETQR_EXPIRES_IN_MINUTES:-15}
       PAYOS_API_URL: ${PAYOS_API_URL:-https://api-merchant.payos.vn}
-      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID:-}
-      PAYOS_API_KEY: ${PAYOS_API_KEY:-}
-      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:-}
+      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID:?PAYOS_CLIENT_ID is required}
+      PAYOS_API_KEY: ${PAYOS_API_KEY:?PAYOS_API_KEY is required}
+      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY:?PAYOS_CHECKSUM_KEY is required}
       PAYOS_PARTNER_CODE: ${PAYOS_PARTNER_CODE:-}
-      PAYOS_RETURN_URL: ${PAYOS_RETURN_URL:-http://localhost:${ADMIN_DASHBOARD_PORT:-42170}/admin/payments?payos=success}
-      PAYOS_CANCEL_URL: ${PAYOS_CANCEL_URL:-http://localhost:${ADMIN_DASHBOARD_PORT:-42170}/admin/payments?payos=cancel}
+      PAYOS_RETURN_URL: ${PAYOS_RETURN_URL:?PAYOS_RETURN_URL is required}
+      PAYOS_CANCEL_URL: ${PAYOS_CANCEL_URL:?PAYOS_CANCEL_URL is required}
       PAYOS_QR_SOURCE: ${PAYOS_QR_SOURCE:-PAYOS}
       PAYOS_AUTO_SYNC_ENABLED: ${PAYOS_AUTO_SYNC_ENABLED:-false}
       PAYOS_AUTO_SYNC_INTERVAL_MS: ${PAYOS_AUTO_SYNC_INTERVAL_MS:-15000}
@@ -382,17 +432,19 @@ services:
       - backend
 
   review-service:
+    <<: *service-defaults
     build:
       context: ..
       dockerfile: services/review-service/Dockerfile
     environment:
       SERVICE_NAME: review-service
+      NODE_ENV: production
       OTEL_SERVICE_NAME: review-service
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3009
-      DATABASE_URL: postgres://cab:cabpass@postgres:5432/review-service_db
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/review-service_db
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
       - postgres
       - redis
@@ -403,23 +455,31 @@ services:
   # Infra: Postgres (demo future)
   # =========================
   postgres:
+    <<: *service-defaults
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: cab
-      POSTGRES_PASSWORD: cabpass
-      POSTGRES_DB: cab_booking
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-cab_booking}
     volumes:
       - cab_postgres_data:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d
+      - ./postgres/pro-init:/docker-entrypoint-initdb.d:ro
+      - ../services:/repo/services:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - backend
 
   pgadmin:
+    <<: *service-defaults
     image: dpage/pgadmin4:8
     profiles: ['ops']
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?PGADMIN_DEFAULT_EMAIL is required}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD is required}
     ports:
       - '${PGADMIN_HOST_PORT:-42137}:80'
     volumes:
@@ -430,10 +490,25 @@ services:
       - backend
 
   mongo:
+    <<: *service-defaults
     image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?MONGO_ROOT_USERNAME is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
+      MONGO_APP_USERNAME: ${MONGO_APP_USERNAME:?MONGO_APP_USERNAME is required}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required}
     volumes:
       - cab_mongo_data:/data/db
-      - ./mongo/init:/docker-entrypoint-initdb.d
+      - ./mongo/pro-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'mongosh --quiet -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand({ ping: 1 }).ok" | grep -q 1'
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - backend
 

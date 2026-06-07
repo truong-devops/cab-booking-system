@@ -15,21 +15,10 @@ const { revokeAccessToken, isAccessTokenRevoked } = require('../utils/revokedAcc
 const { createUser, findUserByIdentifier, findUserById } = require('../repository/userRepository');
 const { createRefreshToken, findRefreshToken, deleteRefreshToken } = require('../repository/tokenRepository');
 const { toUser8 } = require('../utils/identity');
+const { getDevMagicPassword, resolvePublicRegisterRole } = require('../config/authPolicy');
 const monitoring = require('../monitoring');
 
 const router = express.Router();
-
-const DEFAULT_ROLES = (process.env.AUTH_ROLES || 'user,admin,ops,driver')
-  .split(',')
-  .map((role) => role.trim())
-  .filter(Boolean);
-
-function validateRole(role) {
-  if (!role) {
-    return true;
-  }
-  return DEFAULT_ROLES.includes(role);
-}
 
 router.post(
   '/register',
@@ -53,7 +42,8 @@ router.post(
       });
       throw new ApiError(400, 'VALIDATION_ERROR', 'password must be at least 6 characters');
     }
-    if (!validateRole(role)) {
+    const requestedRole = resolvePublicRegisterRole(role);
+    if (!requestedRole) {
       monitoring.recordBusinessEvent({
         domain: 'auth',
         event: 'register',
@@ -82,7 +72,7 @@ router.post(
         email: email || null,
         username: username || name || null,
         passwordHash,
-        role: role || 'user',
+        role: requestedRole,
         status: 'active'
       });
     } catch (error) {
@@ -171,8 +161,8 @@ router.post(
       throw new ApiError(403, 'FORBIDDEN', 'User is not active');
     }
 
-    const magicPassword = process.env.DEV_MAGIC_PASSWORD || '123456';
-    const valid = password === magicPassword || (await verifyPassword(password, user.password_hash));
+    const magicPassword = getDevMagicPassword();
+    const valid = Boolean(magicPassword && password === magicPassword) || (await verifyPassword(password, user.password_hash));
     if (!valid) {
       monitoring.recordBusinessEvent({
         domain: 'auth',

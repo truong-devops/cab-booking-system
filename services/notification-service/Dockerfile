@@ -19,4 +19,5 @@ RUN sh -c 'for i in 1 2 3; do npm install --omit=dev --workspaces --include-work
 COPY services/notification-service ./services/notification-service
 
 WORKDIR /app/services/notification-service
+EXPOSE 3010
 CMD ["node", "src/server.js"]

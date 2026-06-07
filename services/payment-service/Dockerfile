@@ -28,5 +28,5 @@ COPY libs/observability ./libs/observability
 COPY contracts/events ./contracts/events
 
 WORKDIR /app/services/payment-service
-EXPOSE 3000
+EXPOSE 3007
 CMD ["npm", "run", "start"]
