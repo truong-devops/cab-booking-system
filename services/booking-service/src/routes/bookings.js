@@ -238,7 +238,7 @@ function mapCreateResponseCompat(body) {
 }
 
 function shouldUseMinimalLoadResponse(req) {
-  if (String(process.env.BOOKING_LOAD_MINIMAL_RESPONSE || 'true') === 'false') {
+  if (!readBookingLoadFlag('BOOKING_LOAD_MINIMAL_RESPONSE')) {
     return false;
   }
   const hint = String(req.header('x-load-test') || '').toLowerCase();
@@ -259,20 +259,26 @@ function isLoadTestRequest(req) {
   return hint === '1' || hint === 'true' || hint === 'yes';
 }
 
+function readBookingLoadFlag(name) {
+  const value = process.env[name];
+  const fallback = process.env.NODE_ENV === 'production' ? 'false' : 'true';
+  return String(value == null || value === '' ? fallback : value).toLowerCase() === 'true';
+}
+
 function isLoadSkipPersistEnabled() {
-  return String(process.env.BOOKING_LOAD_SKIP_PERSIST || 'true') === 'true';
+  return readBookingLoadFlag('BOOKING_LOAD_SKIP_PERSIST');
 }
 
 function isLoadSkipListDbEnabled() {
-  return String(process.env.BOOKING_LOAD_SKIP_LIST_DB || 'true') === 'true';
+  return readBookingLoadFlag('BOOKING_LOAD_SKIP_LIST_DB');
 }
 
 function isLoadSkipActiveCheckEnabled() {
-  return String(process.env.BOOKING_LOAD_SKIP_ACTIVE_CHECK || 'true') === 'true';
+  return readBookingLoadFlag('BOOKING_LOAD_SKIP_ACTIVE_CHECK');
 }
 
 function isLoadUltraFastPathEnabled() {
-  return String(process.env.BOOKING_LOAD_ULTRA_FAST_PATH || 'true') === 'true';
+  return readBookingLoadFlag('BOOKING_LOAD_ULTRA_FAST_PATH');
 }
 
 function normalizeLatLngPoint(value) {

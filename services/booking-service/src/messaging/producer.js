@@ -4,6 +4,8 @@ const config = require('../config');
 const kafka = new Kafka({
   clientId: config.kafka.clientId,
   brokers: config.kafka.brokers,
+  ssl: config.kafka.ssl,
+  sasl: config.kafka.sasl,
   retry: config.kafka.producerRetry,
   requestTimeout: config.kafka.requestTimeoutMs,
   connectionTimeout: config.kafka.connectionTimeoutMs

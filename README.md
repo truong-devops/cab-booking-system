@@ -254,13 +254,35 @@ Before deploying to a shared staging or production environment:
 3. Expose only a load balancer or ingress in front of the API Gateway. Remove direct public service ports and development UIs.
 4. Terminate trusted TLS certificates at the ingress or gateway. Encrypt and authenticate service-to-service, Kafka, database, and cache traffic.
 5. Replace local PostgreSQL, MongoDB, Redis, and Kafka containers with highly available managed or clustered deployments with backups and recovery procedures.
-6. Run service migrations as an explicit deployment job before starting new application versions. Do not rely on local seed scripts.
+6. Run service migrations as an explicit deployment job before starting new application versions. The production Compose file includes one-shot migration jobs for single-host deployments; orchestrators should model those as release jobs.
 7. Deploy multiple stateless service replicas, configure readiness/liveness probes, and set resource requests, limits, autoscaling, and disruption policies.
 8. Configure `places-service` provider settings and usage policy if place search is required.
 9. Configure external payment providers, verified PayOS webhooks, alert receivers, retention policies, dashboards, and incident runbooks.
 10. Keep demo credentials, seed data, self-signed certificates, mock realtime servers, and tracked local `.env` values out of production.
 
-`infra/docker-compose.pro.yml` intentionally fails fast when required deployment secrets are missing. Use `infra/env/pro.required.example.env` as the checklist for secret managers or deployment-specific env files; do not use the local root `.env` for production compose. Production Compose uses schema-only Postgres/Mongo init files and does not mount local demo seed data.
+`infra/docker-compose.pro.yml` intentionally fails fast when required deployment secrets are missing. Use `infra/env/pro.required.example.env` as the checklist for secret managers or deployment-specific env files; do not use the local root `.env` for production compose. Production Compose uses schema-only Postgres/Mongo init files, packaged Postgres migration artifacts, one-shot `postgres-databases`, `postgres-migrations`, `auth-admin-bootstrap`, and `kafka-topics-bootstrap` jobs. It does not mount local demo seed data or the `services/` source tree into database containers.
+
+When adding or changing service migrations, refresh the packaged production migration artifact before release:
+
+```bash
+scripts/postgres/sync-pro-migrations.sh
+```
+
+Minimum production-shape validation:
+
+```bash
+docker compose --env-file infra/env/pro.required.example.env \
+  -f infra/docker-compose.pro.yml config
+```
+
+Then deploy with a real env file from your secret manager:
+
+```bash
+docker compose --env-file /path/to/pro.env \
+  -f infra/docker-compose.pro.yml up -d
+```
+
+The first admin is created or updated by `auth-admin-bootstrap` from `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`. Redis and Mongo client connection strings are supplied as full URIs (`REDIS_URL`, `RIDE_MONGODB_URI`, `NOTIFICATION_MONGODB_URI`) so reserved characters in passwords can be URL-encoded explicitly. OpenTelemetry is disabled by default in production compose (`OTEL_ENABLED=false`) unless a collector is deployed.
 
 For Kubernetes or another orchestrator, use the service boundaries and environment variables in the Compose files as the deployment mapping, then add managed secrets, service discovery, autoscaling, health probes, and network policies.
 
@@ -275,14 +297,14 @@ Important configuration groups:
 | Authentication    | `JWT_SECRET`, `JWT_ACCESS_SECRET`, `AUTH_JWT_SECRET`, `JWT_ALGORITHMS`                        |
 | Internal trust    | `INTERNAL_API_KEY`                                                                            |
 | Gateway           | `RATE_LIMIT_MAX`, `PROXY_TIMEOUT_MS`, `GATEWAY_HTTPS_ENABLED`, `HTTPS_PORT`                   |
-| Databases         | `DATABASE_URL`, `MONGODB_URI`, `REDIS_URL`                                                    |
-| Kafka             | `KAFKA_BROKERS`, consumer group/retry settings, producer acknowledgement settings             |
+| Databases         | `DATABASE_URL`, `REDIS_URL`, `RIDE_MONGODB_URI`, `NOTIFICATION_MONGODB_URI`                   |
+| Kafka             | `KAFKA_BROKERS`, `KAFKA_SSL`, `KAFKA_SASL_*`, topic policy, consumer/producer settings        |
 | Event reliability | `OUTBOX_*`, `INBOX_*`, Kafka retry and DLQ topic settings                                     |
 | Payments          | `VIETQR_*`, `PAYOS_*`, compensation and auto-sync settings                                    |
 | Places            | `PLACES_PROVIDER_*`                                                                           |
-| Observability     | `OTEL_EXPORTER_OTLP_ENDPOINT`, `DEPLOY_ENV`, `LOGSTASH_SYSLOG_HOST`, alert receiver variables |
+| Observability     | `OTEL_ENABLED`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `DEPLOY_ENV`, alert receiver variables         |
 
-Development Compose provides insecure local defaults for several values. Production Compose requires secrets, database credentials, Redis/Mongo credentials, payment provider credentials, payment callback URLs, and real VietQR account details through the environment or a deployment-specific env file.
+Development Compose provides insecure local defaults for several values. Production Compose requires secrets, database credentials, full Redis/Mongo client URIs, bootstrap admin credentials, payment provider credentials, payment callback URLs, and real VietQR account details through the environment or a deployment-specific env file.
 
 ## Observability
 
@@ -312,7 +334,7 @@ See `docs/runbooks/README.md` and `docs/runbooks/kafka-observability.md` for ale
 - Notification delivery is REST- and dispatcher-based; it is not currently a Kafka consumer.
 - The AI service is a heuristic/rule-based MVP intended for architecture and test scenarios.
 - Retry topics are provisioned by policy, while individual services implement their own retry and DLQ behavior.
-- The production-shaped Compose file is not a complete production platform and currently omits `places-service`.
+- The production-shaped Compose file is a single-host deployment with local infrastructure containers; real production still needs managed or clustered data stores, backups, rollout controls, and network policies.
 - Local environment files and development defaults are intentionally convenient and must not be reused for production secrets.
 
 ## Documentation

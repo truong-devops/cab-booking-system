@@ -1,4 +1,5 @@
 const { Kafka } = require('kafkajs');
+const { buildKafkaClientOptions } = require('../config/kafka');
 const topics = require('./topics');
 const { validateEnvelope } = require('./schemaRegistry');
 const { publishToDlq } = require('./producer');
@@ -18,15 +19,14 @@ function headerValueToString(value) {
   return String(value);
 }
 
-const kafka = new Kafka({
+const kafka = new Kafka(buildKafkaClientOptions({
   clientId: 'ride-service',
-  brokers: [process.env.KAFKA_BROKERS || 'kafka:9092'],
   retry: {
     retries: Number(process.env.KAFKA_CONSUMER_RETRY_RETRIES || 8),
     initialRetryTime: Number(process.env.KAFKA_CONSUMER_RETRY_INITIAL_MS || 300),
     maxRetryTime: Number(process.env.KAFKA_CONSUMER_RETRY_MAX_MS || 30000)
   }
-});
+}));
 
 const CONSUMER_GROUP_ID = process.env.KAFKA_CONSUMER_GROUP_ID || 'ride-service-group';
 const CONSUMER_NAME = 'ride-service';
@@ -340,6 +340,10 @@ async function start() {
       }
     }
   });
+
+  return async () => {
+    await consumer.disconnect();
+  };
 }
 
 module.exports = { start, processConsumedMessage };
