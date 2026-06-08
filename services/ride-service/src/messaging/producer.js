@@ -1,18 +1,18 @@
 const crypto = require('crypto');
 const { Kafka } = require('kafkajs');
+const { buildKafkaClientOptions } = require('../config/kafka');
 const { validateEnvelope } = require('./schemaRegistry');
 const logger = require('../utils/logger');
 const monitoring = require('../monitoring');
 
-const kafka = new Kafka({
+const kafka = new Kafka(buildKafkaClientOptions({
   clientId: 'ride-service',
-  brokers: [process.env.KAFKA_BROKERS || 'kafka:9092'],
   retry: {
     retries: Number(process.env.KAFKA_PRODUCER_RETRY_RETRIES || 8),
     initialRetryTime: Number(process.env.KAFKA_PRODUCER_RETRY_INITIAL_MS || 300),
     maxRetryTime: Number(process.env.KAFKA_PRODUCER_RETRY_MAX_MS || 30000)
   }
-});
+}));
 
 const PRODUCER_ACKS = Number(process.env.KAFKA_PRODUCER_ACKS || -1);
 const PRODUCER_TIMEOUT_MS = Number(process.env.KAFKA_PRODUCER_REQUEST_TIMEOUT_MS || 30000);

@@ -1,6 +1,24 @@
 x-service-defaults: &service-defaults
   restart: unless-stopped
 
+x-job-defaults: &job-defaults
+  restart: "no"
+
+x-otel-env: &otel-env
+  OTEL_ENABLED: ${OTEL_ENABLED:-false}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+
+x-startup-env: &startup-env
+  STARTUP_MAX_RETRIES: ${STARTUP_MAX_RETRIES:-0}
+  STARTUP_RETRY_INITIAL_DELAY_MS: ${STARTUP_RETRY_INITIAL_DELAY_MS:-1000}
+  STARTUP_RETRY_MAX_DELAY_MS: ${STARTUP_RETRY_MAX_DELAY_MS:-15000}
+
+x-kafka-client-env: &kafka-client-env
+  KAFKA_SSL: ${KAFKA_SSL:-false}
+  KAFKA_SASL_MECHANISM: ${KAFKA_SASL_MECHANISM:-}
+  KAFKA_SASL_USERNAME: ${KAFKA_SASL_USERNAME:-}
+  KAFKA_SASL_PASSWORD: ${KAFKA_SASL_PASSWORD:-}
+
 services:
   zookeeper:
     <<: *service-defaults
@@ -28,7 +46,35 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: ${KAFKA_TOPIC_RF:-1}
       KAFKA_MIN_INSYNC_REPLICAS: ${KAFKA_TOPIC_MIN_ISR:-1}
       KAFKA_NUM_PARTITIONS: ${KAFKA_TOPIC_DEFAULT_PARTITIONS:-3}
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: ${KAFKA_AUTO_CREATE_TOPICS_ENABLE:-true}
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: ${KAFKA_AUTO_CREATE_TOPICS_ENABLE:-false}
+    healthcheck:
+      test: ['CMD-SHELL', 'kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1']
+      interval: 10s
+      timeout: 10s
+      retries: 12
+    networks:
+      - backend
+
+  kafka-topics-bootstrap:
+    <<: *job-defaults
+    image: confluentinc/cp-kafka:7.6.1
+    environment:
+      KAFKA_BOOTSTRAP_SERVER: ${KAFKA_BOOTSTRAP_SERVER:-kafka:9092}
+      KAFKA_BOOTSTRAP_WAIT_ATTEMPTS: ${KAFKA_BOOTSTRAP_WAIT_ATTEMPTS:-30}
+      KAFKA_BOOTSTRAP_WAIT_MS: ${KAFKA_BOOTSTRAP_WAIT_MS:-2000}
+      KAFKA_TOPIC_RF: ${KAFKA_TOPIC_RF:-1}
+      KAFKA_TOPIC_MIN_ISR: ${KAFKA_TOPIC_MIN_ISR:-1}
+      KAFKA_TOPIC_RETENTION_MS: ${KAFKA_TOPIC_RETENTION_MS:-604800000}
+      KAFKA_TOPIC_SEGMENT_MS: ${KAFKA_TOPIC_SEGMENT_MS:-3600000}
+      KAFKA_DLQ_TOPIC_RETENTION_MS: ${KAFKA_DLQ_TOPIC_RETENTION_MS:-1209600000}
+      KAFKA_TOPIC_SPECS: ${KAFKA_TOPIC_SPECS:-ride.created:6 ride.assigned:6 ride.cancelled:6 payment.completed:6 payment.failed:6 review.created:3 driver.location.updated:12}
+      KAFKA_RETRY_TIERS: ${KAFKA_RETRY_TIERS:-retry.30s:1800000 retry.5m:21600000 retry.30m:259200000}
+    volumes:
+      - ./kafka/bootstrap-topics.sh:/opt/kafka-bootstrap/bootstrap-topics.sh:ro
+    command: ['/bin/sh', '/opt/kafka-bootstrap/bootstrap-topics.sh']
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - backend
 
@@ -62,10 +108,10 @@ services:
       - '${API_GATEWAY_HOST_PORT:-42100}:3000'
       - '${API_GATEWAY_HTTPS_HOST_PORT:-42101}:3443'
     environment:
+      <<: *otel-env
       SERVICE_NAME: api-gateway
       NODE_ENV: production
       OTEL_SERVICE_NAME: api-gateway
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       AUTH_SERVICE_URL: http://auth-service:4001
@@ -87,18 +133,30 @@ services:
       HTTPS_CERT_PATH: ${HTTPS_CERT_PATH:-/app/src/certs/dev-gateway.crt}
       HTTPS_KEY_PATH: ${HTTPS_KEY_PATH:-/app/src/certs/dev-gateway.key}
     depends_on:
-      - auth-service
-      - booking-service
-      - driver-service
-      - eta-service
-      - places-service
-      - notification-service
-      - payment-service
-      - pricing-service
-      - ai-service
-      - ride-service
-      - review-service
-      - user-service
+      auth-service:
+        condition: service_started
+      booking-service:
+        condition: service_started
+      driver-service:
+        condition: service_started
+      eta-service:
+        condition: service_started
+      places-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      pricing-service:
+        condition: service_started
+      ai-service:
+        condition: service_started
+      ride-service:
+        condition: service_started
+      review-service:
+        condition: service_started
+      user-service:
+        condition: service_started
     networks:
       - backend
 
@@ -108,16 +166,17 @@ services:
       context: ..
       dockerfile: services/auth-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env]
       SERVICE_NAME: auth-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: auth-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 4001
       DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/auth-service_db
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       AUTH_PUBLIC_REGISTER_ROLES: ${AUTH_PUBLIC_REGISTER_ROLES:-user,driver}
     depends_on:
-      - postgres
+      auth-admin-bootstrap:
+        condition: service_completed_successfully
     networks:
       - backend
 
@@ -127,16 +186,17 @@ services:
       context: ..
       dockerfile: services/user-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env]
       SERVICE_NAME: user-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: user-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 4004
       DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/user-service_db
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
-      - postgres
+      postgres-migrations:
+        condition: service_completed_successfully
     networks:
       - backend
 
@@ -146,13 +206,13 @@ services:
       context: ..
       dockerfile: services/ride-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env, *kafka-client-env]
       SERVICE_NAME: ride-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: ride-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3005
-      MONGODB_URI: mongodb://${MONGO_APP_USERNAME:?MONGO_APP_USERNAME is required}:${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required}@mongo:27017/ride_service?authSource=ride_service
-      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      MONGODB_URI: ${RIDE_MONGODB_URI:?RIDE_MONGODB_URI is required}
+      REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
       KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
       KAFKA_CONSUMER_GROUP_ID: ride-service-group
       KAFKA_CONSUMER_PARTITIONS_CONCURRENCY: 1
@@ -187,9 +247,12 @@ services:
       INBOX_PROCESSING_TIMEOUT_MS: 300000
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
-      - mongo
-      - redis
-      - kafka
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka-topics-bootstrap:
+        condition: service_completed_successfully
     networks:
       - backend
 
@@ -199,10 +262,10 @@ services:
       context: ..
       dockerfile: services/booking-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env, *kafka-client-env]
       SERVICE_NAME: booking-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: booking-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3003
       DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/booking-service_db
       KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
@@ -243,10 +306,14 @@ services:
       BOOKING_LOAD_SKIP_ACTIVE_CHECK: 'false'
       BOOKING_LOAD_ULTRA_FAST_PATH: 'false'
     depends_on:
-      - kafka
-      - postgres
-      - eta-service
-      - ai-service
+      kafka-topics-bootstrap:
+        condition: service_completed_successfully
+      postgres-migrations:
+        condition: service_completed_successfully
+      eta-service:
+        condition: service_started
+      ai-service:
+        condition: service_started
     networks:
       - backend
 
@@ -256,6 +323,7 @@ services:
       context: ..
       dockerfile: services/eta-service/Dockerfile
     environment:
+      <<: *otel-env
       SERVICE_NAME: eta-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: eta-service
@@ -269,6 +337,7 @@ services:
       context: ..
       dockerfile: services/places-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env]
       SERVICE_NAME: places-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: places-service
@@ -279,7 +348,8 @@ services:
       PLACES_PROVIDER_TIMEOUT_MS: ${PLACES_PROVIDER_TIMEOUT_MS:-1800}
       PLACES_PROVIDER_COUNTRY_CODES: ${PLACES_PROVIDER_COUNTRY_CODES:-vn}
     depends_on:
-      - postgres
+      postgres-migrations:
+        condition: service_completed_successfully
     networks:
       - backend
 
@@ -289,6 +359,7 @@ services:
       context: ..
       dockerfile: services/ai-service/Dockerfile
     environment:
+      <<: *otel-env
       SERVICE_NAME: ai-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: ai-service
@@ -303,17 +374,19 @@ services:
       context: ..
       dockerfile: services/driver-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env]
       SERVICE_NAME: driver-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: driver-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3011
       DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/driver-service_db
-      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
       AUTH_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
-      - postgres
-      - redis
+      postgres-migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     networks:
       - backend
 
@@ -323,18 +396,20 @@ services:
       context: ..
       dockerfile: services/notification-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env]
       SERVICE_NAME: notification-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: notification-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3010
-      MONGODB_URI: mongodb://${MONGO_APP_USERNAME:?MONGO_APP_USERNAME is required}:${MONGO_APP_PASSWORD:?MONGO_APP_PASSWORD is required}@mongo:27017/notification_service?authSource=notification_service
+      MONGODB_URI: ${NOTIFICATION_MONGODB_URI:?NOTIFICATION_MONGODB_URI is required}
       USER_SERVICE_BASE_URL: http://user-service:4004
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
       AUTH_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
-      - mongo
-      - user-service
+      mongo:
+        condition: service_healthy
+      user-service:
+        condition: service_started
     networks:
       - backend
 
@@ -344,18 +419,19 @@ services:
       context: ..
       dockerfile: services/pricing-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env]
       SERVICE_NAME: pricing-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: pricing-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3006
-      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
       COUPON_DISCOUNTS_JSON: '{"WELCOME10":10000,"VIP20":20000,"OFF50":50000}'
       RATES_JSON: '{"STANDARD":{"surgeMultiplier":1.1},"PREMIUM":{"surgeMultiplier":1.3}}'
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - backend
 
@@ -365,13 +441,13 @@ services:
       context: ..
       dockerfile: services/payment-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env, *kafka-client-env]
       SERVICE_NAME: payment-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: payment-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3007
       DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/payment-service_db
-      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
       KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
       KAFKA_CONSUME_TOPICS: ride.created,ride.assigned,ride.cancelled
@@ -425,9 +501,12 @@ services:
       PAYOS_AUTO_SYNC_INTERVAL_MS: ${PAYOS_AUTO_SYNC_INTERVAL_MS:-15000}
       PAYOS_AUTO_SYNC_BATCH_SIZE: ${PAYOS_AUTO_SYNC_BATCH_SIZE:-20}
     depends_on:
-      - postgres
-      - redis
-      - kafka
+      postgres-migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      kafka-topics-bootstrap:
+        condition: service_completed_successfully
     networks:
       - backend
 
@@ -437,17 +516,19 @@ services:
       context: ..
       dockerfile: services/review-service/Dockerfile
     environment:
+      <<: [*otel-env, *startup-env]
       SERVICE_NAME: review-service
       NODE_ENV: production
       OTEL_SERVICE_NAME: review-service
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
       PORT: 3009
       DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/review-service_db
-      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379
+      REDIS_URL: ${REDIS_URL:?REDIS_URL is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
-      - postgres
-      - redis
+      postgres-migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     networks:
       - backend
 
@@ -461,15 +542,72 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-cab_booking}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:?BOOTSTRAP_ADMIN_EMAIL is required}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?BOOTSTRAP_ADMIN_PASSWORD is required}
+      BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-}
+      BOOTSTRAP_ADMIN_BCRYPT_ROUNDS: ${BOOTSTRAP_ADMIN_BCRYPT_ROUNDS:-10}
     volumes:
       - cab_postgres_data:/var/lib/postgresql/data
       - ./postgres/pro-init:/docker-entrypoint-initdb.d:ro
-      - ../services:/repo/services:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - backend
+
+  postgres-databases:
+    <<: *job-defaults
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-cab_booking}
+      POSTGRES_HOST: postgres
+    volumes:
+      - ./postgres/pro-init:/docker-entrypoint-initdb.d:ro
+    command: ['/bin/sh', '/docker-entrypoint-initdb.d/01-create-service-databases.sh']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  postgres-migrations:
+    <<: *job-defaults
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_HOST: postgres
+      SERVICE_MIGRATIONS_ROOT: /docker-entrypoint-initdb.d/service-migrations
+    volumes:
+      - ./postgres/pro-init:/docker-entrypoint-initdb.d:ro
+    command: ['/bin/sh', '/docker-entrypoint-initdb.d/02-apply-service-schemas.sh']
+    depends_on:
+      postgres-databases:
+        condition: service_completed_successfully
+    networks:
+      - backend
+
+  auth-admin-bootstrap:
+    <<: *job-defaults
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_HOST: postgres
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:?BOOTSTRAP_ADMIN_EMAIL is required}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?BOOTSTRAP_ADMIN_PASSWORD is required}
+      BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-}
+      BOOTSTRAP_ADMIN_BCRYPT_ROUNDS: ${BOOTSTRAP_ADMIN_BCRYPT_ROUNDS:-10}
+    volumes:
+      - ./postgres/pro-init:/docker-entrypoint-initdb.d:ro
+    command: ['/bin/sh', '/docker-entrypoint-initdb.d/03-bootstrap-auth-admin.sh']
+    depends_on:
+      postgres-migrations:
+        condition: service_completed_successfully
     networks:
       - backend
 
@@ -485,7 +623,8 @@ services:
     volumes:
       - cab_pgadmin_data:/var/lib/pgadmin
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - backend
 
