@@ -12,6 +12,8 @@ const logger = require('../utils/logger');
 const kafka = new Kafka({
   clientId: config.kafka.clientId,
   brokers: config.kafka.brokers,
+  ssl: config.kafka.ssl,
+  sasl: config.kafka.sasl,
   retry: config.kafka.consumerRetry,
   requestTimeout: config.kafka.requestTimeoutMs,
   connectionTimeout: config.kafka.connectionTimeoutMs

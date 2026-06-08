@@ -64,6 +64,8 @@ function kafkaLogCreator() {
 const kafka = new Kafka({
   clientId: config.kafka.clientId,
   brokers: config.kafka.brokers,
+  ssl: config.kafka.ssl,
+  sasl: config.kafka.sasl,
   retry: config.kafka.retry,
   logLevel: toKafkaLogLevel(process.env.KAFKA_LOG_LEVEL || 'error'),
   logCreator: kafkaLogCreator

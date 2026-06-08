@@ -39,6 +39,12 @@ Main topics are taken from `contracts/events/catalog.json` and policy in `infra/
 
 ## 3. Topic bootstrap command
 
+Production Compose:
+
+- `infra/docker-compose.pro.yml` runs `kafka-topics-bootstrap` as a one-shot job.
+- `booking-service`, `ride-service`, and `payment-service` wait for that job before starting.
+- `KAFKA_AUTO_CREATE_TOPICS_ENABLE` defaults to `false` in production compose.
+
 Local/single broker:
 
 ```bash
@@ -74,3 +80,5 @@ node scripts/kafka/bootstrap-topics.js
 docker compose -f infra/docker-compose.dev.yml -f infra/docker-compose.kafka.prodlike.yml \
   --profile kafka-prodlike exec -T kafka-1 kafka-topics --bootstrap-server kafka-1:9092 --describe
 ```
+
+For managed Kafka, set `KAFKA_BROKERS`, `KAFKA_SSL`, and `KAFKA_SASL_*` in the service environment. The Node services that use Kafka support KafkaJS SSL/SASL configuration from those variables.

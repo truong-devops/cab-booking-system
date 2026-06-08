@@ -40,6 +40,19 @@ const config = {
       .split(',')
       .map((value) => value.trim())
       .filter(Boolean),
+    ssl: parseBoolean(process.env.KAFKA_SSL, false),
+    sasl: (() => {
+      const mechanism = String(process.env.KAFKA_SASL_MECHANISM || '').trim();
+      if (!mechanism) {
+        return undefined;
+      }
+      const username = process.env.KAFKA_SASL_USERNAME;
+      const password = process.env.KAFKA_SASL_PASSWORD;
+      if (!username || !password) {
+        throw new Error('KAFKA_SASL_USERNAME and KAFKA_SASL_PASSWORD are required when KAFKA_SASL_MECHANISM is set');
+      }
+      return { mechanism, username, password };
+    })(),
     consumerGroupId: process.env.KAFKA_CONSUMER_GROUP_ID || 'payment-service-group',
     consumeTopics: (process.env.KAFKA_CONSUME_TOPICS || '')
       .split(',')

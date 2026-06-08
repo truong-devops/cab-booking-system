@@ -3,6 +3,20 @@ function toNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function parseBoolean(value, fallback = false) {
+  if (value == null || value === '') {
+    return fallback;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  if (['true', '1', 'yes'].includes(normalized)) {
+    return true;
+  }
+  if (['false', '0', 'no'].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+}
+
 function normalizeBrokers(value) {
   return String(value || 'kafka:9092')
     .split(',')
@@ -17,12 +31,29 @@ function normalizeTopics(value, fallback) {
     .filter(Boolean);
 }
 
+function buildKafkaSasl() {
+  const mechanism = String(process.env.KAFKA_SASL_MECHANISM || '').trim();
+  if (!mechanism) {
+    return undefined;
+  }
+
+  const username = process.env.KAFKA_SASL_USERNAME;
+  const password = process.env.KAFKA_SASL_PASSWORD;
+  if (!username || !password) {
+    throw new Error('KAFKA_SASL_USERNAME and KAFKA_SASL_PASSWORD are required when KAFKA_SASL_MECHANISM is set');
+  }
+
+  return { mechanism, username, password };
+}
+
 module.exports = {
   serviceName: process.env.SERVICE_NAME || 'booking-service',
   port: toNumber(process.env.PORT, 3003),
   kafka: {
     clientId: process.env.KAFKA_CLIENT_ID || 'booking-service',
     brokers: normalizeBrokers(process.env.KAFKA_BROKERS),
+    ssl: parseBoolean(process.env.KAFKA_SSL, false),
+    sasl: buildKafkaSasl(),
     requestTimeoutMs: toNumber(process.env.KAFKA_REQUEST_TIMEOUT_MS, 60000),
     connectionTimeoutMs: toNumber(process.env.KAFKA_CONNECTION_TIMEOUT_MS, 10000),
     consumeTopics: normalizeTopics(process.env.KAFKA_CONSUME_TOPICS, 'payment.completed,payment.failed'),
