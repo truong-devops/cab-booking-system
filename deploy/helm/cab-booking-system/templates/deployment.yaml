@@ -1,0 +1,73 @@
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+{{- $replicas := default 1 $svc.replicas }}
+{{- $resources := default $.Values.resources.default $svc.resources }}
+{{- $livenessPath := default $.Values.probes.livenessPath $svc.livenessPath }}
+{{- $readinessPath := default $.Values.probes.readinessPath $svc.readinessPath }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name | quote }}
+  namespace: {{ $.Values.global.namespace | quote }}
+  labels:
+    {{- include "cab.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $name | quote }}
+spec:
+  replicas: {{ $replicas }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      {{- include "cab.selectorLabels" (dict "root" $ "name" $name) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cab.selectorLabels" (dict "root" $ "name" $name) | nindent 8 }}
+        app.kubernetes.io/part-of: cab-booking-system
+    spec:
+      serviceAccountName: {{ include "cab.serviceAccountName" $ | quote }}
+      {{- with $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range . }}
+        - name: {{ . | quote }}
+      {{- end }}
+      {{- end }}
+      securityContext:
+        {{- toYaml $.Values.global.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ $name | quote }}
+          image: {{ include "cab.image" (dict "root" $ "image" $svc.image) | quote }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy | quote }}
+          ports:
+            - name: http
+              containerPort: {{ $svc.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ printf "%s-config" $name | quote }}
+          {{- if $svc.secretEnv }}
+          env:
+            {{- include "cab.envVars" (dict "plain" (dict) "secret" $svc.secretEnv "secretName" $.Values.global.secretName) | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ $livenessPath | quote }}
+              port: http
+            initialDelaySeconds: {{ $.Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ $.Values.probes.periodSeconds }}
+            timeoutSeconds: {{ $.Values.probes.timeoutSeconds }}
+            failureThreshold: {{ $.Values.probes.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ $readinessPath | quote }}
+              port: http
+            initialDelaySeconds: {{ $.Values.probes.initialDelaySeconds }}
+            periodSeconds: {{ $.Values.probes.periodSeconds }}
+            timeoutSeconds: {{ $.Values.probes.timeoutSeconds }}
+            failureThreshold: {{ $.Values.probes.failureThreshold }}
+          resources:
+            {{- toYaml $resources | nindent 12 }}
+          securityContext:
+            {{- toYaml $.Values.global.containerSecurityContext | nindent 12 }}
+---
+{{- end }}
+{{- end }}

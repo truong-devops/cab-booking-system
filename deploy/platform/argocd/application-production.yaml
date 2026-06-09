@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cab-prod
+  namespace: argocd
+spec:
+  project: cab
+  source:
+    repoURL: git@gitlab.your-domain.com:cab/cab-booking-gitops.git
+    targetRevision: main
+    path: deploy/helm/cab-booking-system
+    helm:
+      valueFiles:
+        - values-production.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cab-prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+

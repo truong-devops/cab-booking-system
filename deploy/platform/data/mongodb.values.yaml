@@ -1,0 +1,29 @@
+fullnameOverride: mongodb
+
+architecture: standalone
+
+auth:
+  enabled: true
+  rootUser: root
+  existingSecret: cab-mongodb-secret
+  usernames:
+    - cab_app
+  databases:
+    - ride_service
+    - notification_service
+
+persistence:
+  enabled: true
+  storageClass: longhorn
+  size: 20Gi
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+
+metrics:
+  enabled: true

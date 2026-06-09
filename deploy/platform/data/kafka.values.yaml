@@ -1,0 +1,32 @@
+fullnameOverride: kafka
+
+controller:
+  replicaCount: 3
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+listeners:
+  client:
+    protocol: PLAINTEXT
+  interbroker:
+    protocol: PLAINTEXT
+  controller:
+    protocol: PLAINTEXT
+
+kraft:
+  enabled: true
+
+metrics:
+  jmx:
+    enabled: true
+  kafka:
+    enabled: true

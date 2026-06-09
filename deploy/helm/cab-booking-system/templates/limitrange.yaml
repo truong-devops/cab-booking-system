@@ -1,0 +1,18 @@
+{{- if .Values.limitRange.enabled }}
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cab-app-limits
+  namespace: {{ .Values.global.namespace | quote }}
+  labels:
+    {{- include "cab.labels" . | nindent 4 }}
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: {{ .Values.limitRange.defaultCpu | quote }}
+        memory: {{ .Values.limitRange.defaultMemory | quote }}
+      defaultRequest:
+        cpu: {{ .Values.limitRange.defaultRequestCpu | quote }}
+        memory: {{ .Values.limitRange.defaultRequestMemory | quote }}
+{{- end }}
