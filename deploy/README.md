@@ -32,12 +32,12 @@ deploy/
 ## Thứ tự dùng
 
 1. Đọc `docs/deployment/README.md` để hiểu plan tổng thể.
-2. Điền `deploy/env/cluster.env` thành file riêng trên máy bạn, không commit.
+2. Tạo `deploy/env/cluster.env` hoặc `/secure/path/cluster.env` trên máy deploy, không commit.
 3. Cài K3s bằng scripts trong `deploy/platform/k3s`.
 4. Cài storage trong `deploy/platform/storage` nếu database chạy trong K3s.
 5. Cài data layer trong `deploy/platform/data` hoặc chuẩn bị managed database.
 6. Cài add-ons trong `deploy/platform`.
-7. Tạo Kubernetes Secret từ `deploy/env/app-secrets.env` đã thay giá trị thật.
+7. Tạo Kubernetes Secret từ file local `app-secrets.env` đã thay giá trị thật.
 8. Render thử Helm chart:
 
 ```bash

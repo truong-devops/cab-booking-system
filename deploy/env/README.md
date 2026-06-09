@@ -1,6 +1,6 @@
 # Environment Và Secret
 
-Thư mục này chứa checklist env cho deployment. File đã điền secret thật phải để ngoài repo hoặc lưu trong secret manager.
+Thư mục này chứa checklist env cho deployment. Các file `.env` ở đây là local-only, đã nằm trong `.gitignore`; khi deploy thật hãy tạo trên máy deploy hoặc lưu trong secret manager.
 
 ## Các nhóm env
 
@@ -9,6 +9,8 @@ Thư mục này chứa checklist env cho deployment. File đã điền secret th
 | `cluster.env` | Domain, IP private của VPS, token K3s, Harbor pull robot. |
 | `app-secrets.env` | Secret của app: JWT, database URL, Redis, MongoDB, payment provider. |
 | `data-secrets.env` | Secret cho data layer: PostgreSQL, Redis, MongoDB. |
+
+Quy tắc: không `git add` các file trên. Nếu đã từng add nhầm, dùng `git rm --cached <file>` để bỏ tracking nhưng giữ file trên máy.
 
 ## Tạo Kubernetes Secret cho app
 

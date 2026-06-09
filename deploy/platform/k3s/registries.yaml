@@ -1,9 +1,0 @@
-mirrors:
-  harbor.your-domain.com:
-    endpoint:
-      - "https://harbor.your-domain.com"
-configs:
-  "harbor.your-domain.com":
-    auth:
-      username: "robot$cab-k3s"
-      password: "CHANGE_ME_HARBOR_ROBOT_PULL_TOKEN"

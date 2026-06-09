@@ -48,6 +48,8 @@ sudo cp /secure/path/registries.yaml /etc/rancher/k3s/registries.yaml
 sh deploy/platform/k3s/install-first-server.sh
 ```
 
+`registries.yaml` chứa Harbor robot token nên là file local-only và đã được ignore. Không commit file này.
+
 Trên node thứ 2 và thứ 3:
 
 ```bash
@@ -128,6 +130,8 @@ helm upgrade --install loki grafana/loki \
 ```
 
 Prometheus/Grafana theo dõi metric. Loki giữ log để debug khi service lỗi trên K3s.
+
+`kube-prometheus-stack.values.yaml` có thể chứa mật khẩu Grafana, nên file này cũng là local-only. Khi production thật, ưu tiên dùng Kubernetes Secret hoặc External Secrets thay vì ghi password trực tiếp trong values.
 
 ## 8. Cài Argo CD
 

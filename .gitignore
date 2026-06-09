@@ -36,3 +36,15 @@ tmp
 scripts/evidence
 # k6 token cache
 scripts/postman-truong/k6/.cache/
+
+# Deployment secrets and local-only deploy overrides
+deploy/env/*.env
+deploy/platform/k3s/registries.yaml
+deploy/platform/monitoring/kube-prometheus-stack.values.yaml
+deploy/**/secret*.yaml
+deploy/**/secrets*.yaml
+deploy/**/.env
+deploy/**/*.local.yaml
+deploy/**/*.local.yml
+*.kubeconfig
+kubeconfig*
