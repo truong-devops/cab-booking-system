@@ -1,0 +1,11 @@
+defaultSettings:
+  defaultReplicaCount: 2
+  storageMinimalAvailablePercentage: 20
+  storageReservedPercentageForDefaultDisk: 10
+
+persistence:
+  defaultClass: true
+  defaultClassReplicaCount: 2
+
+longhornUI:
+  replicas: 1

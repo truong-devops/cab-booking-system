@@ -1,0 +1,38 @@
+{{- if .Values.jobs.authAdminBootstrap.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cab-bootstrap-auth-admin
+  namespace: {{ .Values.global.namespace | quote }}
+  labels:
+    {{- include "cab.labels" . | nindent 4 }}
+  annotations:
+    {{- include "cab.hookAnnotations" (dict "weight" "-20") | nindent 4 }}
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cab-bootstrap-auth-admin
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "cab.serviceAccountName" . | quote }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range . }}
+        - name: {{ . | quote }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: bootstrap-auth-admin
+          image: {{ include "cab.image" (dict "root" . "image" .Values.jobs.authAdminBootstrap.image) | quote }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | quote }}
+          command:
+            - /bin/sh
+            - /docker-entrypoint-initdb.d/03-bootstrap-auth-admin.sh
+          env:
+            {{- include "cab.envVars" (dict "plain" .Values.jobs.authAdminBootstrap.env "secret" .Values.jobs.authAdminBootstrap.secretEnv "secretName" .Values.global.secretName) | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.global.containerSecurityContext | nindent 12 }}
+{{- end }}

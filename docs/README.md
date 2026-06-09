@@ -86,6 +86,11 @@ Quy tắc onboarding nhanh cho LLM khác:
 └── docs/                    # Tài liệu kiến trúc, OpenAPI, runbook, sequence diagram
 ```
 
+## Deployment
+
+- `docs/deployment/README.md`: kế hoạch triển khai DevSecOps 4 VPS với K3s, GitLab CI, Harbor, Argo CD, Trivy, Gitleaks, Semgrep, SonarQube, Kyverno, Prometheus, Grafana, Loki, Nginx Ingress và cert-manager.
+- `deploy/README.md`: bộ file chuẩn bị triển khai: env/secret, GitLab CI, Helm chart, K3s platform add-ons, storage, data layer và Argo CD applications.
+
 ## Kiến trúc tổng thể
 
 Hệ thống đi theo mô hình microservices/event-driven:
@@ -872,6 +877,7 @@ Dùng để onboarding, tra cứu kiến trúc, API, runbook và flow.
 | `docs/sequence-diagrams/main-event-flows.md` | Sequence diagram cho luồng event chính. |
 | `docs/sequence-diagrams/design-pattern-flows.md` | Sequence diagram cho pattern kỹ thuật. |
 | `docs/architecture/service-overview.rtf` | Tổng quan service/architecture. |
+| `docs/deployment/README.md` | Kế hoạch triển khai DevSecOps 4 VPS với K3s và GitLab CI. |
 | `docs/observability/*.md` | Observability architecture/audit/checklist/migration notes. |
 | `docs/runbooks/*.md` | Runbook vận hành. |
 | `docs/failure-scenarios/*.md` | Kafka readiness/failure remediation reports. |

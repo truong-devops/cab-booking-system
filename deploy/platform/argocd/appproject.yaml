@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: cab
+  namespace: argocd
+spec:
+  description: Cab Booking System GitOps project
+  sourceRepos:
+    - git@gitlab.your-domain.com:cab/cab-booking-gitops.git
+  destinations:
+    - namespace: cab-staging
+      server: https://kubernetes.default.svc
+    - namespace: cab-prod
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+

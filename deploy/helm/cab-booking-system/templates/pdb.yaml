@@ -1,0 +1,20 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- range $name, $svc := .Values.services }}
+{{- if and $svc.enabled (gt (int (default 1 $svc.replicas)) 1) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ printf "%s-pdb" $name | quote }}
+  namespace: {{ $.Values.global.namespace | quote }}
+  labels:
+    {{- include "cab.labels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $name | quote }}
+spec:
+  minAvailable: {{ $.Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "cab.selectorLabels" (dict "root" $ "name" $name) | nindent 6 }}
+---
+{{- end }}
+{{- end }}
+{{- end }}

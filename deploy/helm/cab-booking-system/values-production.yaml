@@ -1,0 +1,63 @@
+global:
+  namespace: cab-prod
+  imageRegistry: harbor.your-domain.com/cab
+  imageTag: CHANGE_ME_APPROVED_PRODUCTION_COMMIT_SHA
+  secretName: cab-app-secrets
+  commonEnv:
+    OTEL_ENABLED: "true"
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.monitoring.svc.cluster.local:4318
+    STARTUP_MAX_RETRIES: "0"
+    STARTUP_RETRY_INITIAL_DELAY_MS: "1000"
+    STARTUP_RETRY_MAX_DELAY_MS: "15000"
+
+ingress:
+  host: api.your-domain.com
+  tlsSecretName: cab-api-prod-tls
+  clusterIssuer: letsencrypt-prod
+
+networkPolicy:
+  dataNamespace: data-prod
+
+resourceQuota:
+  requestsCpu: "8"
+  requestsMemory: 16Gi
+  limitsCpu: "16"
+  limitsMemory: 32Gi
+
+jobs:
+  postgresDatabases:
+    env:
+      POSTGRES_HOST: postgres.data-prod.svc.cluster.local
+  postgresMigrations:
+    env:
+      POSTGRES_HOST: postgres.data-prod.svc.cluster.local
+  authAdminBootstrap:
+    env:
+      POSTGRES_HOST: postgres.data-prod.svc.cluster.local
+  kafkaTopics:
+    env:
+      KAFKA_BOOTSTRAP_SERVER: kafka.data-prod.svc.cluster.local:9092
+      KAFKA_TOPIC_RF: "3"
+      KAFKA_TOPIC_MIN_ISR: "2"
+
+services:
+  api-gateway:
+    replicas: 2
+  auth-service:
+    replicas: 2
+  user-service:
+    replicas: 2
+  driver-service:
+    replicas: 2
+  booking-service:
+    replicas: 2
+    env:
+      KAFKA_BROKERS: kafka.data-prod.svc.cluster.local:9092
+  ride-service:
+    replicas: 2
+    env:
+      KAFKA_BROKERS: kafka.data-prod.svc.cluster.local:9092
+  payment-service:
+    replicas: 2
+    env:
+      KAFKA_BROKERS: kafka.data-prod.svc.cluster.local:9092

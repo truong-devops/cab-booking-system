@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-nginx
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kyverno
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: logging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cab-staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cab-prod
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data-staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data-prod
+
