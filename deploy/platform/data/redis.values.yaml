@@ -1,0 +1,24 @@
+fullnameOverride: redis
+
+architecture: standalone
+
+auth:
+  enabled: true
+  existingSecret: cab-redis-secret
+  existingSecretPasswordKey: REDIS_PASSWORD
+
+master:
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+metrics:
+  enabled: true

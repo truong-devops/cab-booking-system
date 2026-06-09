@@ -1,0 +1,211 @@
+stages:
+  - verify
+  - secrets
+  - sast
+  - quality
+  - build
+  - image_scan
+  - gitops
+
+variables:
+  NODE_VERSION: "20"
+  IMAGE_TAG: "$CI_COMMIT_SHA"
+  HARBOR_REGISTRY: "harbor.your-domain.com"
+  HARBOR_PROJECT: "cab"
+  DOCKER_CONFIG: "$CI_PROJECT_DIR/.docker"
+  TRIVY_CACHE_DIR: "$CI_PROJECT_DIR/.trivycache"
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_TAG'
+
+verify:node:
+  stage: verify
+  image: node:${NODE_VERSION}-alpine
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .npm/
+  script:
+    - npm ci --cache .npm --prefer-offline
+    - npm run contracts:events:validate
+    - npm run contracts:events:compat
+    - npm run test --if-present --workspaces
+
+scan:gitleaks:
+  stage: secrets
+  image: zricethezav/gitleaks:v8.18.4
+  script:
+    - gitleaks detect --source . --verbose --redact
+
+scan:semgrep:
+  stage: sast
+  image: semgrep/semgrep:1.75.0
+  script:
+    - semgrep scan --config p/ci --error
+
+scan:trivy-fs:
+  stage: sast
+  image: aquasec/trivy:0.52.2
+  cache:
+    key: trivy-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .trivycache/
+  script:
+    - trivy fs --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed .
+
+quality:sonarqube:
+  stage: quality
+  image: sonarsource/sonar-scanner-cli:5.0
+  script:
+    - sonar-scanner
+      -Dsonar.host.url="$SONAR_HOST_URL"
+      -Dsonar.token="$SONAR_TOKEN"
+      -Dsonar.projectKey="cab-booking-system"
+      -Dsonar.sources="services,libs,contracts"
+      -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/coverage/**"
+  rules:
+    - if: '$SONAR_HOST_URL && $SONAR_TOKEN'
+
+.kaniko_build:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  before_script:
+    - mkdir -p "$DOCKER_CONFIG"
+    - echo "{\"auths\":{\"$HARBOR_REGISTRY\":{\"username\":\"$HARBOR_USERNAME\",\"password\":\"$HARBOR_PASSWORD\"}}}" > "$DOCKER_CONFIG/config.json"
+
+build:services:
+  extends: .kaniko_build
+  parallel:
+    matrix:
+      - SERVICE:
+          - api-gateway
+          - auth-service
+          - user-service
+          - driver-service
+          - booking-service
+          - ride-service
+          - pricing-service
+          - payment-service
+          - notification-service
+          - review-service
+          - eta-service
+          - places-service
+          - ai-service
+  script:
+    - /kaniko/executor
+      --context "$CI_PROJECT_DIR"
+      --dockerfile "$CI_PROJECT_DIR/services/$SERVICE/Dockerfile"
+      --destination "$HARBOR_REGISTRY/$HARBOR_PROJECT/$SERVICE:$IMAGE_TAG"
+      --destination "$HARBOR_REGISTRY/$HARBOR_PROJECT/$SERVICE:$CI_COMMIT_REF_SLUG"
+      --cache=true
+      --cache-repo "$HARBOR_REGISTRY/$HARBOR_PROJECT/cache"
+
+build:helper-images:
+  extends: .kaniko_build
+  parallel:
+    matrix:
+      - HELPER_IMAGE:
+          - postgres-migrations
+          - kafka-topics
+  script:
+    - /kaniko/executor
+      --context "$CI_PROJECT_DIR"
+      --dockerfile "$CI_PROJECT_DIR/deploy/images/$HELPER_IMAGE/Dockerfile"
+      --destination "$HARBOR_REGISTRY/$HARBOR_PROJECT/$HELPER_IMAGE:$IMAGE_TAG"
+      --destination "$HARBOR_REGISTRY/$HARBOR_PROJECT/$HELPER_IMAGE:$CI_COMMIT_REF_SLUG"
+      --cache=true
+      --cache-repo "$HARBOR_REGISTRY/$HARBOR_PROJECT/cache"
+
+scan:service-images:
+  stage: image_scan
+  image: aquasec/trivy:0.52.2
+  cache:
+    key: trivy-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .trivycache/
+  parallel:
+    matrix:
+      - IMAGE_NAME:
+          - api-gateway
+          - auth-service
+          - user-service
+          - driver-service
+          - booking-service
+          - ride-service
+          - pricing-service
+          - payment-service
+          - notification-service
+          - review-service
+          - eta-service
+          - places-service
+          - ai-service
+          - postgres-migrations
+          - kafka-topics
+  script:
+    - trivy image
+      --username "$HARBOR_USERNAME"
+      --password "$HARBOR_PASSWORD"
+      --exit-code 1
+      --severity HIGH,CRITICAL
+      --ignore-unfixed
+      "$HARBOR_REGISTRY/$HARBOR_PROJECT/$IMAGE_NAME:$IMAGE_TAG"
+
+gitops:update-staging:
+  stage: gitops
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache git openssh-client yq
+    - mkdir -p ~/.ssh
+    - echo "$GITOPS_DEPLOY_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan "$GITOPS_HOST" >> ~/.ssh/known_hosts
+    - git config --global user.email "ci@cab-booking-system.local"
+    - git config --global user.name "cab-booking-system-ci"
+  script:
+    - git clone "$GITOPS_REPO_SSH_URL" gitops
+    - cd gitops
+    - yq -i '.global.imageRegistry = strenv(HARBOR_REGISTRY) + "/" + strenv(HARBOR_PROJECT)' deploy/helm/cab-booking-system/values-staging.yaml
+    - yq -i '.global.imageTag = strenv(IMAGE_TAG)' deploy/helm/cab-booking-system/values-staging.yaml
+    - git add deploy/helm/cab-booking-system/values-staging.yaml
+    - |
+      if git diff --cached --quiet; then
+        echo "No GitOps change"
+        exit 0
+      fi
+    - git commit -m "deploy(staging): cab-booking-system $IMAGE_TAG"
+    - git push origin main
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+gitops:update-production:
+  stage: gitops
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache git openssh-client yq
+    - mkdir -p ~/.ssh
+    - echo "$GITOPS_DEPLOY_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan "$GITOPS_HOST" >> ~/.ssh/known_hosts
+    - git config --global user.email "ci@cab-booking-system.local"
+    - git config --global user.name "cab-booking-system-ci"
+  script:
+    - git clone "$GITOPS_REPO_SSH_URL" gitops
+    - cd gitops
+    - yq -i '.global.imageRegistry = strenv(HARBOR_REGISTRY) + "/" + strenv(HARBOR_PROJECT)' deploy/helm/cab-booking-system/values-production.yaml
+    - yq -i '.global.imageTag = strenv(IMAGE_TAG)' deploy/helm/cab-booking-system/values-production.yaml
+    - git add deploy/helm/cab-booking-system/values-production.yaml
+    - |
+      if git diff --cached --quiet; then
+        echo "No GitOps change"
+        exit 0
+      fi
+    - git commit -m "deploy(production): cab-booking-system $IMAGE_TAG"
+    - git push origin main
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: manual

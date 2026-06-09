@@ -1,0 +1,17 @@
+controller:
+  replicaCount: 2
+  admissionWebhooks:
+    enabled: true
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      namespace: monitoring
+  service:
+    type: LoadBalancer
+  config:
+    use-forwarded-headers: "true"
+    proxy-body-size: "10m"
+    proxy-read-timeout: "60"
+    proxy-send-timeout: "60"
+

@@ -1,0 +1,25 @@
+fullnameOverride: postgres
+
+auth:
+  username: cab_prod
+  database: cab_booking
+  existingSecret: cab-postgres-secret
+  secretKeys:
+    userPasswordKey: POSTGRES_PASSWORD
+    adminPasswordKey: POSTGRES_PASSWORD
+
+primary:
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+metrics:
+  enabled: true

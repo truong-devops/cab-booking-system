@@ -1,0 +1,40 @@
+global:
+  namespace: cab-staging
+  imageRegistry: harbor.your-domain.com/cab
+  imageTag: CHANGE_ME_STAGING_COMMIT_SHA
+  secretName: cab-app-secrets
+
+ingress:
+  host: api-staging.your-domain.com
+  tlsSecretName: cab-api-staging-tls
+  clusterIssuer: letsencrypt-staging
+
+networkPolicy:
+  dataNamespace: data-staging
+
+jobs:
+  postgresDatabases:
+    env:
+      POSTGRES_HOST: postgres.data-staging.svc.cluster.local
+  postgresMigrations:
+    env:
+      POSTGRES_HOST: postgres.data-staging.svc.cluster.local
+  authAdminBootstrap:
+    env:
+      POSTGRES_HOST: postgres.data-staging.svc.cluster.local
+  kafkaTopics:
+    env:
+      KAFKA_BOOTSTRAP_SERVER: kafka.data-staging.svc.cluster.local:9092
+
+services:
+  api-gateway:
+    replicas: 1
+  booking-service:
+    env:
+      KAFKA_BROKERS: kafka.data-staging.svc.cluster.local:9092
+  ride-service:
+    env:
+      KAFKA_BROKERS: kafka.data-staging.svc.cluster.local:9092
+  payment-service:
+    env:
+      KAFKA_BROKERS: kafka.data-staging.svc.cluster.local:9092

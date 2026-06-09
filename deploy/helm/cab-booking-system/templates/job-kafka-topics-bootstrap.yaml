@@ -1,0 +1,38 @@
+{{- if .Values.jobs.kafkaTopics.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cab-bootstrap-kafka-topics
+  namespace: {{ .Values.global.namespace | quote }}
+  labels:
+    {{- include "cab.labels" . | nindent 4 }}
+  annotations:
+    {{- include "cab.hookAnnotations" (dict "weight" "-20") | nindent 4 }}
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cab-bootstrap-kafka-topics
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: {{ include "cab.serviceAccountName" . | quote }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range . }}
+        - name: {{ . | quote }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: bootstrap-kafka-topics
+          image: {{ include "cab.image" (dict "root" . "image" .Values.jobs.kafkaTopics.image) | quote }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | quote }}
+          command:
+            - /bin/sh
+            - /opt/kafka-bootstrap/bootstrap-topics.sh
+          env:
+            {{- include "cab.envVars" (dict "plain" .Values.jobs.kafkaTopics.env "secret" (dict) "secretName" .Values.global.secretName) | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.global.containerSecurityContext | nindent 12 }}
+{{- end }}
